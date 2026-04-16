@@ -21,9 +21,6 @@ export interface SystemData {
   browser: string;
   ram: string;
   hostname: string;
-  resolution: string;
-  language: string;
-  gpu?: string;
 }
 
 export function useIPInspector() {
@@ -33,144 +30,81 @@ export function useIPInspector() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let active = true;
-    
     async function fetchData() {
-      // 1. Immediate System Info (Sync)
       try {
+        setLoading(true);
+
+        // 1. Get client info from our server (initial check)
+        const serverInfo = await axios.get('/api/client-info');
+        const initialIp = serverInfo.data.ip;
+
+        // 2. Reliable IPv4 and IPv6 detection using separate endpoints
+        let ipv4 = '';
+        let ipv6 = '';
+
+        try {
+          const v4Res = await axios.get('https://api.ipify.org?format=json', { timeout: 3000 });
+          ipv4 = v4Res.data.ip;
+        } catch (e) {
+          console.warn('IPv4 reliable detection failed, falling back');
+          ipv4 = initialIp.includes(':') ? '' : initialIp;
+        }
+
+        try {
+          const v6Res = await axios.get('https://api6.ipify.org?format=json', { timeout: 3000 });
+          ipv6 = v6Res.data.ip;
+        } catch (e) {
+          console.warn('IPv6 reliable detection failed or not available');
+          ipv6 = initialIp.includes(':') ? initialIp : '';
+        }
+
+        // 3. Get Geolocation info using the detected IPv4 (or fallback)
+        const geoIp = ipv4 || initialIp;
+        const geoResponse = await axios.get(`https://ipapi.co/${geoIp}/json/`);
+        const geoData = geoResponse.data;
+
+        // 4. Detect DNS Resolver
+        let dnsResolver = 'Detectando...';
+        try {
+          const dnsRes = await axios.get('https://edns.ip-api.com/json/', { timeout: 3000 });
+          if (dnsRes.data && dnsRes.data.dns) {
+            dnsResolver = `${dnsRes.data.dns.geo} (${dnsRes.data.dns.ip})`;
+          }
+        } catch (e) {
+          dnsResolver = 'Cloudflare / Google (Padrão)';
+        }
+
+        setIpData({
+          ip: ipv4,
+          ipv6: ipv6,
+          dns_resolver: dnsResolver,
+          ...geoData
+        });
+
+        // 4. System Info (Client Side)
         const parser = new UAParser();
         const browser = parser.getBrowser();
         const os = parser.getOS();
+        
+        // deviceMemory is unofficial but supported in Chrome/Edge
         const ram = (navigator as any).deviceMemory ? `${(navigator as any).deviceMemory} GB` : 'Não detectado';
-        const resolution = `${window.screen.width}x${window.screen.height}`;
-        const language = navigator.language.toUpperCase();
 
         setSystemData({
           os: `${os.name} ${os.version || ''}`,
           browser: `${browser.name} ${browser.version}`,
           ram,
-          hostname: 'Auditando...',
-          resolution,
-          language,
-          gpu: 'Detectando...'
+          hostname: serverInfo.data.serverHostname || 'Desconhecido', // Real hostname is server-side only
         });
-      } catch (e) {
-        console.error('Initial system info error:', e);
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        // 2. Main Server Info (High Priority)
-        let serverIp = '0.0.0.0';
-        let serverHostname = 'Desconhecido';
-        try {
-          const serverInfo = await axios.get('/api/client-info', { timeout: 3000 });
-          serverIp = serverInfo.data.ip;
-          serverHostname = serverInfo.data.serverHostname;
-          
-          if (active) {
-            setIpData({ ip: serverIp } as IPData);
-            setSystemData(prev => prev ? { ...prev, hostname: serverHostname } : null);
-             // We have enough to start the app
-             setLoading(false);
-          }
-        } catch (e) {
-          console.error('Server info failed');
-          if (active) setLoading(false); // Don't block even if server call fails
-        }
-
-        // 3. Background Detection (Non-blocking)
-        const runBackgroundTasks = async () => {
-          if (!active) return;
-
-          // IPv4 & IPv6 Parallel
-          let ipv4 = '';
-          let ipv6 = '';
-          const [v4Result, v6Result] = await Promise.allSettled([
-            axios.get('https://api.ipify.org?format=json', { timeout: 3000 }),
-            axios.get('https://api6.ipify.org?format=json', { timeout: 1500 }) // IPv6 is often the slow one
-          ]);
-
-          if (v4Result.status === 'fulfilled') ipv4 = v4Result.value.data.ip;
-          if (v6Result.status === 'fulfilled') ipv6 = v6Result.value.data.ip;
-          
-          const finalIp = ipv4 || serverIp;
-
-          // Geodata via Server Proxy (Safer for CORS/SSL)
-          let geoData = {};
-          try {
-             // We use our own backend as a proxy for technical data
-             const geoRes = await axios.get(`/api/inspect-ip/${finalIp}`, { timeout: 5000 });
-             if (geoRes.data && geoRes.data.status === 'success') {
-               geoData = {
-                 city: geoRes.data.city,
-                 region: geoRes.data.regionName,
-                 country_name: geoRes.data.country,
-                 org: geoRes.data.isp,
-                 asn: geoRes.data.as,
-                 latitude: geoRes.data.lat,
-                 longitude: geoRes.data.lon,
-                 timezone: geoRes.data.timezone
-               };
-             }
-          } catch (e) {
-             console.warn('Background geodata failed');
-          }
-
-          // DNS Resolver
-          let dnsResolver = 'Cloudflare / Google (Padrão)';
-          try {
-            const dnsRes = await axios.get('https://edns.ip-api.com/json/', { timeout: 2000 });
-            if (dnsRes.data && dnsRes.data.dns) {
-              dnsResolver = `${dnsRes.data.dns.geo} (${dnsRes.data.dns.ip})`;
-            }
-          } catch (e) {}
-
-          // GPU (Technical detection)
-          let gpu = 'Desconhecida';
-          try {
-            const canvas = document.createElement('canvas');
-            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-            if (gl) {
-              const debugInfo = (gl as any).getExtension('WEBGL_debug_renderer_info');
-              if (debugInfo) {
-                gpu = (gl as any).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-              }
-            }
-          } catch (e) {}
-
-          if (active) {
-            setIpData(prev => ({
-              ...prev,
-              ip: finalIp,
-              ipv6,
-              dns_resolver: dnsResolver,
-              ...geoData
-            } as IPData));
-
-            setSystemData(prev => prev ? { ...prev, gpu } : null);
-          }
-        };
-
-        runBackgroundTasks();
 
       } catch (err) {
-        console.error('Fetch chain error:', err);
-        // Error only if we have absolutely nothing
-        if (!ipData) {
-          setError('Conexão instável detectada. Alguns dados podem não carregar.');
-          setLoading(false);
-        }
+        console.error(err);
+        setError('Erro ao carregar dados. Tente novamente.');
+      } finally {
+        setLoading(false);
       }
     }
 
     fetchData();
-
-    return () => {
-      active = false;
-    };
   }, []);
 
   return { ipData, systemData, loading, error };

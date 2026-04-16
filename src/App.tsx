@@ -235,18 +235,36 @@ export default function App() {
     { id: 'rastreio', label: 'Rastreio', icon: MapIcon },
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg-dark text-brand-accent">
+        <motion.div 
+          animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
+          transition={{ repeat: Infinity, duration: 1.5 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="w-12 h-12 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+          <span className="font-mono text-xs tracking-[0.2em] uppercase">Iniciando Monitoramento...</span>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-bg-dark text-white font-sans selection:bg-brand-accent/30">
       {/* Navigation Header */}
       <header className="sticky top-0 z-50 border-b border-border-dim bg-bg-dark/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="p-1.5 md:p-2 bg-brand-accent/10 rounded-lg md:rounded-xl border border-brand-accent/20">
-              <Box className="w-4 h-4 md:w-5 md:h-5 text-brand-accent" />
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="p-1.5 md:p-2 bg-brand-accent/10 rounded-lg md:rounded-xl border border-brand-accent/20">
+                <Box className="w-4 h-4 md:w-5 md:h-5 text-brand-accent" />
+              </div>
+              <span className="text-[18px] md:text-[22px] font-extrabold tracking-tighter text-white italic leading-none">
+                iT<span className="text-brand-accent not-italic">manage</span>
+              </span>
             </div>
-            <span className="text-[18px] md:text-[22px] font-extrabold tracking-tighter text-white italic leading-none">
-              iT<span className="text-brand-accent not-italic">manage</span>
-            </span>
+            <span className="text-[9px] md:text-[10px] text-text-dim/60 font-mono tracking-wider ml-1">meuip.itmanage.com.br</span>
           </div>
 
           <div className="hidden lg:flex items-center gap-2 bg-bg-dark/40 p-1 rounded-2xl border border-border-dim/50">
@@ -319,30 +337,6 @@ export default function App() {
       </AnimatePresence>
 
       <main className="max-w-7xl mx-auto px-6 py-10">
-        {error && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between gap-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500/20 rounded-lg">
-                <Info className="w-4 h-4 text-red-500" />
-              </div>
-              <p className="text-xs text-red-500/80 font-medium">
-                <span className="font-black uppercase mr-2 text-red-500">Aviso de Rede:</span> 
-                {error}
-              </p>
-            </div>
-            <button 
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
-            >
-              Recarregar
-            </button>
-          </motion.div>
-        )}
-
         <AnimatePresence mode="wait">
           {activeTab === 'meu-ip' && (
             <motion.div 
@@ -392,7 +386,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    {ipData?.ip && ipData.ip !== '0.0.0.0' && (
+                    {ipData?.ip && (
                       <div className="hidden sm:flex shrink-0 p-4 bg-white/5 border border-white/5 rounded-2xl flex-col items-center gap-3 self-center sm:self-start group-hover:border-brand-accent/20 transition-all">
                         <div className="p-2 bg-white rounded-lg">
                           <QRCodeSVG 
@@ -433,43 +427,26 @@ export default function App() {
                 </motion.div>
 
                 {/* System Info Grid */}
-                <div className="md:col-span-2 bg-card-bg border border-border-dim rounded-xl p-5 md:p-8 text-center sm:text-left overflow-hidden relative">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-brand-accent/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-brand-accent/10 transition-colors" />
-                  
-                  <div className="text-[10px] md:text-[11px] text-text-dim uppercase tracking-widest mb-8 flex items-center justify-center sm:justify-start gap-2 font-bold ring-1 ring-white/5 py-1 px-3 w-fit rounded-full bg-white/5">
-                    <Cpu className="w-3.5 h-3.5 text-brand-accent" /> Auditoria de Hardware & OS
+                <div className="md:col-span-2 bg-card-bg border border-border-dim rounded-xl p-5 md:p-6 text-center sm:text-left">
+                  <div className="text-[10px] md:text-[11px] text-text-dim uppercase tracking-wider mb-6 flex items-center justify-center sm:justify-start gap-2">
+                    <Cpu className="w-3 h-3" /> Informações do Sistema
                   </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-8 md:gap-x-12">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8 md:gap-x-12">
                     <div>
-                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Machine Hostname</div>
-                      <div className="text-[14px] md:text-[15px] font-mono text-brand-accent font-black truncate">{systemData?.hostname || 'iTmanage-Node'}</div>
+                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Nome do Dispositivo</div>
+                      <div className="text-[14px] md:text-[15px] font-medium truncate">{systemData?.hostname || 'ITM-WORKSTATION'}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Stack Operacional</div>
+                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Sistema Operacional</div>
                       <div className="text-[14px] md:text-[15px] font-medium truncate">{systemData?.os}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Browser Engine</div>
-                      <div className="text-[14px] md:text-[15px] font-medium truncate">{systemData?.browser}</div>
+                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Memória RAM</div>
+                      <div className="text-[14px] md:text-[15px] font-medium">{systemData?.ram}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Alocação de RAM</div>
-                      <div className="text-[14px] md:text-[15px] font-medium text-brand-success">{systemData?.ram}</div>
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Display / Resolução</div>
-                      <div className="text-[14px] md:text-[15px] font-medium">{systemData?.resolution}</div>
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Localização / Idioma</div>
-                      <div className="text-[14px] md:text-[15px] font-medium uppercase tracking-widest">{systemData?.language}</div>
-                    </div>
-                    <div className="sm:col-span-2 md:col-span-3">
-                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Acelerador Gráfico (GPU)</div>
-                      <div className="text-[13px] md:text-[14px] font-mono text-text-dim/80 truncate bg-bg-dark/40 p-3 rounded-lg border border-border-dim/50 leading-relaxed italic">
-                        {systemData?.gpu || 'Software Rendering Only'}
-                      </div>
+                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Tempo de Atividade</div>
+                      <div className="text-[14px] md:text-[15px] font-medium">04d 12h 31m</div>
                     </div>
                   </div>
                 </div>
@@ -491,7 +468,7 @@ export default function App() {
                       </div>
                       <div>
                         <div className="text-[12px] text-text-dim mb-1">Número ASN</div>
-                        <div className="text-[14px] font-mono text-brand-accent font-bold italic">{ipData?.asn || 'AS27699'}</div>
+                        <div className="text-[14px] font-mono text-brand-accent">{ipData?.asn || 'AS27699'}</div>
                       </div>
                       <div>
                         <div className="text-[12px] text-text-dim mb-1">Região de Acesso</div>
@@ -501,33 +478,35 @@ export default function App() {
                   </div>
                   
                   <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="h-[220px] bg-bg-dark relative overflow-hidden group"
+                    whileHover={{ scale: 1.01 }}
+                    className="flex-grow min-h-[220px] bg-bg-dark relative transition-shadow hover:shadow-2xl hover:shadow-brand-accent/10 cursor-crosshair overflow-hidden rounded-xl"
                   >
-                    {ipData && ipData.latitude && ipData.longitude && typeof window !== 'undefined' ? (
+                    {ipData && ipData.latitude && ipData.longitude ? (
                       <MapContainer 
                         center={[ipData.latitude, ipData.longitude]} 
                         zoom={12} 
                         style={{ height: '100%', width: '100%' }}
                         zoomControl={false}
                         className="z-0"
-                        key={`monitor-${ipData.latitude}-${ipData.longitude}`}
                       >
                         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        <Marker position={[ipData.latitude, ipData.longitude]} />
+                        <Marker position={[ipData.latitude, ipData.longitude]}>
+                          <Popup minWidth={240}>
+                            <div className="bg-bg-dark border border-white/10 p-3 rounded-lg text-white">
+                               <p className="text-[10px] font-black uppercase text-brand-accent mb-2">Sua Geolocalização</p>
+                               <p className="text-xs font-bold">{ipData.city}, {ipData.region}</p>
+                               <p className="text-[10px] text-text-dim mt-1">{ipData.ip}</p>
+                            </div>
+                          </Popup>
+                        </Marker>
                       </MapContainer>
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-text-dim gap-3 p-10 text-center">
-                        <MapIcon className="w-8 h-8 opacity-20" />
-                        <span className="italic text-[10px] uppercase tracking-widest leading-relaxed">
-                          {ipData ? 'Geolocalização não disponível para este range' : 'Mapeamento em andamento...'}
-                        </span>
+                      <div className="w-full h-full flex items-center justify-center text-text-dim italic text-sm">
+                        Mapa indisponível
                       </div>
                     )}
-                    <div className="absolute bottom-3 left-3 z-10 p-2 bg-bg-dark/80 backdrop-blur-sm rounded-lg text-[9px] text-text-dim border border-white/5">
-                      LAT: {ipData?.latitude || '--'} | LON: {ipData?.longitude || '--'}
-                    </div>
+                    <div className="absolute top-4 right-4 z-10 w-3 h-3 bg-brand-accent rounded-full animate-ping opacity-75" />
+                    <div className="absolute top-4 right-4 z-10 w-3 h-3 bg-brand-accent rounded-full" />
                   </motion.div>
                   
                   <div className="p-4 bg-bg-dark/50 text-[10px] text-text-dim leading-relaxed border-t border-border-dim">
@@ -606,7 +585,7 @@ export default function App() {
                             <div className="text-[10px] text-text-dim">{validatorData.isp} / {validatorData.org}</div>
                          </div>
 
-                         {validatorData.lat && validatorData.lon && typeof window !== 'undefined' ? (
+                         {validatorData.lat && validatorData.lon && (
                             <div className="h-[200px] rounded-xl overflow-hidden border border-border-dim relative group">
                                <MapContainer center={[validatorData.lat, validatorData.lon]} zoom={10} style={{height: '100%'}} zoomControl={false} key={`${validatorData.lat}-${validatorData.lon}`}>
                                   <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -615,10 +594,6 @@ export default function App() {
                                <div className="absolute bottom-3 left-3 z-10 p-2 bg-bg-dark/80 backdrop-blur-sm rounded-lg text-[9px] text-text-dim border border-white/5">
                                   LAT: {validatorData.lat} | LON: {validatorData.lon}
                                </div>
-                            </div>
-                         ) : validatorData.lat && (
-                            <div className="h-[200px] bg-bg-dark border border-border-dim rounded-xl flex items-center justify-center text-text-dim italic text-xs uppercase tracking-widest">
-                               Preparando Visualização do Mapa...
                             </div>
                          )}
 
