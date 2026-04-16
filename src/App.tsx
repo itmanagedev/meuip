@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { GoogleGenAI } from "@google/genai";
-import { QRCodeSVG } from 'qrcode.react';
 import { useIPInspector } from './hooks/useIPInspector';
 import { cn } from './lib/utils';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -253,18 +252,15 @@ export default function App() {
   return (
     <div className="min-h-screen bg-bg-dark text-white font-sans selection:bg-brand-accent/30">
       {/* Navigation Header */}
-      <header className="sticky top-0 z-50 border-b border-border-dim bg-bg-dark/80 backdrop-blur-md">
+              <header className="sticky top-0 z-50 border-b border-border-dim bg-bg-dark/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2 md:gap-3">
-              <div className="p-1.5 md:p-2 bg-brand-accent/10 rounded-lg md:rounded-xl border border-brand-accent/20">
-                <Box className="w-4 h-4 md:w-5 md:h-5 text-brand-accent" />
-              </div>
-              <span className="text-[18px] md:text-[22px] font-extrabold tracking-tighter text-white italic leading-none">
-                iT<span className="text-brand-accent not-italic">manage</span>
-              </span>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 bg-brand-accent/10 rounded-lg md:rounded-xl border border-brand-accent/20">
+              <Box className="w-4 h-4 md:w-5 md:h-5 text-brand-accent" />
             </div>
-            <span className="text-[9px] md:text-[10px] text-text-dim/60 font-mono tracking-wider ml-1">meuip.itmanage.com.br</span>
+            <span className="text-[18px] md:text-[22px] font-extrabold tracking-tighter text-white italic leading-none">
+              iT<span className="text-brand-accent not-italic">manage</span>
+            </span>
           </div>
 
           <div className="hidden lg:flex items-center gap-2 bg-bg-dark/40 p-1 rounded-2xl border border-border-dim/50">
@@ -347,27 +343,26 @@ export default function App() {
               className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start"
             >
               {/* Main Network Stats */}
-              <section className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                
-                {/* IP Card */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="md:col-span-2 bg-card-bg border border-border-dim rounded-2xl p-6 md:p-8 flex flex-col min-h-[auto] md:min-h-[320px] shadow-2xl relative overflow-hidden group"
-                >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-brand-accent/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-brand-accent/10 transition-colors" />
-                  
-                  <div className="flex items-center gap-3 text-[10px] md:text-[11px] text-text-dim uppercase tracking-[0.2em] font-bold mb-6 md:mb-10">
-                    <div className="p-1.5 bg-brand-accent/10 rounded-lg">
-                      <Globe className="w-3.5 h-3.5 text-brand-accent" />
+              <section className="lg:col-span-8 flex flex-col gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {/* IP Card */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="md:col-span-2 bg-card-bg border border-border-dim rounded-2xl p-6 md:p-8 flex flex-col min-h-[auto] md:min-h-[320px] shadow-2xl relative overflow-hidden group"
+                  >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-brand-accent/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-brand-accent/10 transition-colors" />
+                    
+                    <div className="flex items-center gap-3 text-[10px] md:text-[11px] text-text-dim uppercase tracking-[0.2em] font-bold mb-6 md:mb-10">
+                      <div className="p-1.5 bg-brand-accent/10 rounded-lg">
+                        <Globe className="w-3.5 h-3.5 text-brand-accent" />
+                      </div>
+                      Endereços de Rede Ativos
                     </div>
-                    Endereços de Rede Ativos
-                  </div>
-                  
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-8">
-                    <div className="space-y-6 md:space-y-10 flex-grow">
+                    
+                    <div className="space-y-6 md:space-y-10">
                       <div className="relative">
-                        <div className="text-[11px] md:text-[12px] text-text-dim mb-2 flex items-center gap-2">
+                        <div className="text-[11px] md:text-[12px] text-text-dim mb-2 flex items-center gap-2 uppercase font-black">
                           <Shield className="w-3 h-3" /> Protocolo IPv4 (Principal)
                         </div>
                         <div className="font-mono text-[28px] sm:text-[34px] md:text-[42px] text-brand-accent glow-text font-black leading-none tracking-tighter break-all">
@@ -376,7 +371,7 @@ export default function App() {
                       </div>
                       
                       <div className="p-4 bg-bg-dark/40 border-l-2 border-border-dim rounded-r-xl">
-                        <div className="text-[11px] md:text-[12px] text-text-dim mb-2">Protocolo IPv6 (Secundário)</div>
+                        <div className="text-[11px] md:text-[12px] text-text-dim mb-2 uppercase font-black">Protocolo IPv6 (Secundário)</div>
                         <div className={cn(
                           "font-mono text-[11px] sm:text-[13px] break-all leading-relaxed italic font-bold",
                           ipData?.ipv6 ? "text-text-dim/80" : "text-red-500"
@@ -386,67 +381,91 @@ export default function App() {
                       </div>
                     </div>
 
-                    {ipData?.ip && (
-                      <div className="hidden sm:flex shrink-0 p-4 bg-white/5 border border-white/5 rounded-2xl flex-col items-center gap-3 self-center sm:self-start group-hover:border-brand-accent/20 transition-all">
-                        <div className="p-2 bg-white rounded-lg">
-                          <QRCodeSVG 
-                            value={ipData.ip} 
-                            size={120} 
-                            level="H" 
-                            fgColor="#000000"
-                            bgColor="#FFFFFF"
-                          />
-                        </div>
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-text-dim group-hover:text-brand-accent transition-colors">IP Credentials QR</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-auto pt-10">
-                    <div className="p-5 bg-bg-dark/60 rounded-xl border border-border-dim/50 group/dns hover:border-brand-accent/30 transition-all">
-                      <div className="text-[11px] text-text-dim uppercase tracking-wider mb-3 flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          <Zap className="w-3.5 h-3.5 text-brand-accent animate-pulse" /> DNS Recursivo Detectado
-                        </span>
-                        <div className="relative group/tooltip">
-                          <Info className="w-4 h-4 cursor-help text-text-dim/40 hover:text-brand-accent transition-all" />
-                          <div className="absolute bottom-full right-0 mb-4 w-72 p-4 bg-bg-dark border border-brand-accent/30 rounded-2xl text-[10px] text-text-dim opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all shadow-2xl z-50 pointer-events-none normal-case leading-relaxed ring-1 ring-white/5">
-                            <p className="font-bold text-brand-accent mb-2 flex items-center gap-2 underline decoration-brand-accent/30">
-                              <Server className="w-3 h-3" /> Camada de Resolução DNS
-                            </p>
-                            Este é o servidor que traduz nomes de sites em números de rede. Um DNS eficiente reduz a latência de navegação e bloqueia ameaças preventivamente.
+                    <div className="mt-auto pt-10">
+                      <div className="p-5 bg-bg-dark/60 rounded-xl border border-border-dim/50 group/dns hover:border-brand-accent/30 transition-all">
+                        <div className="text-[11px] text-text-dim uppercase tracking-wider mb-3 flex items-center justify-between font-black">
+                          <span className="flex items-center gap-2">
+                            <Zap className="w-3.5 h-3.5 text-brand-accent animate-pulse" /> DNS Recursivo Detectado
+                          </span>
+                          <div className="relative group/tooltip">
+                            <Info className="w-4 h-4 cursor-help text-text-dim/40 hover:text-brand-accent transition-all" />
+                            <div className="absolute bottom-full right-0 mb-4 w-72 p-4 bg-bg-dark border border-brand-accent/30 rounded-2xl text-[10px] text-text-dim opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all shadow-2xl z-50 pointer-events-none normal-case leading-relaxed ring-1 ring-white/5">
+                              <p className="font-bold text-brand-accent mb-2 flex items-center gap-2 underline decoration-brand-accent/30">
+                                <Server className="w-3 h-3" /> Camada de Resolução DNS
+                              </p>
+                              Este é o servidor que traduz nomes de sites em números de rede. Um DNS eficiente reduz a latência de navegação e bloqueia ameaças preventivamente.
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-[15px] font-bold flex items-center gap-3 text-white">
-                        <Server className="w-4 h-4 text-brand-accent" />
-                        {ipData?.dns_resolver || 'Buscando servidor...'}
+                        <div className="text-[15px] font-black flex items-center gap-3 text-white">
+                          <Server className="w-4 h-4 text-brand-accent" />
+                          {ipData?.dns_resolver || 'Buscando servidor...'}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
 
-                {/* System Info Grid */}
-                <div className="md:col-span-2 bg-card-bg border border-border-dim rounded-xl p-5 md:p-6 text-center sm:text-left">
-                  <div className="text-[10px] md:text-[11px] text-text-dim uppercase tracking-wider mb-6 flex items-center justify-center sm:justify-start gap-2">
-                    <Cpu className="w-3 h-3" /> Informações do Sistema
+                  {/* Integrated Map Integration */}
+                  <div className="hidden md:block bg-card-bg border border-border-dim rounded-2xl overflow-hidden relative group">
+                    {ipData?.latitude && ipData?.longitude ? (
+                      <div className="w-full h-full relative">
+                         <MapContainer center={[ipData.latitude, ipData.longitude]} zoom={10} style={{height: '100%', width: '100%'}} zoomControl={false} key={`meu-ip-map-sync-${ipData.latitude}`}>
+                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                            <Marker position={[ipData.latitude, ipData.longitude]} />
+                         </MapContainer>
+                         <div className="absolute bottom-3 left-3 z-[400] p-2 bg-bg-dark/90 backdrop-blur-sm border border-white/5 rounded-lg text-[9px] font-black text-brand-accent uppercase tracking-widest">
+                            LAT: {ipData.latitude} | LON: {ipData.longitude}
+                         </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full bg-bg-dark/50 text-text-dim text-[10px] font-black uppercase">Mapeando...</div>
+                    )}
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8 md:gap-x-12">
+                </div>
+
+                {/* System Info Grid Expanded */}
+                <div className="bg-card-bg border border-border-dim rounded-xl p-6 md:p-8">
+                  <div className="text-[10px] md:text-[11px] text-text-dim uppercase tracking-wider mb-8 flex items-center justify-center sm:justify-start gap-4 font-black">
+                    <Cpu className="w-4 h-4 text-brand-accent" /> Matriz de Diagnóstico do Sistema
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     <div>
-                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Nome do Dispositivo</div>
-                      <div className="text-[14px] md:text-[15px] font-medium truncate">{systemData?.hostname || 'ITM-WORKSTATION'}</div>
+                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Hostname de Rede</div>
+                      <div className="text-[14px] font-black text-white truncate">{systemData?.hostname || 'ITM-NODE-PROD'}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Sistema Operacional</div>
-                      <div className="text-[14px] md:text-[15px] font-medium truncate">{systemData?.os}</div>
+                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Sistema Operacional</div>
+                      <div className="text-[14px] font-black text-white truncate">{systemData?.os}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Memória RAM</div>
-                      <div className="text-[14px] md:text-[15px] font-medium">{systemData?.ram}</div>
+                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Engine Navegador</div>
+                      <div className="text-[14px] font-black text-white truncate">{systemData?.browser}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Tempo de Atividade</div>
-                      <div className="text-[14px] md:text-[15px] font-medium">04d 12h 31m</div>
+                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Recursos Físicos</div>
+                      <div className="text-[14px] font-black text-white flex gap-2">
+                         <span className="px-2 py-0.5 bg-white/5 rounded text-[10px]">{systemData?.ram} RAM</span>
+                         <span className="px-2 py-0.5 bg-white/5 rounded text-[10px]">{systemData?.cores} CORES</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Geometria de Tela</div>
+                      <div className="text-[14px] font-black text-white">{systemData?.resolution}</div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Localidade I18N</div>
+                      <div className="text-[14px] font-black text-white uppercase">{systemData?.language}</div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Arquitetura Ark</div>
+                      <div className="text-[14px] font-black text-white">{systemData?.platform}</div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Status de Sessão</div>
+                      <div className="text-[13px] font-black text-brand-success flex items-center gap-2">
+                         <div className="w-2 h-2 bg-brand-success rounded-full" />
+                         ATIVO
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -463,16 +482,16 @@ export default function App() {
                     <div className="text-[11px] text-text-dim uppercase tracking-wider mb-6">Provedor & ASN</div>
                     <div className="space-y-4">
                       <div>
-                        <div className="text-[12px] text-text-dim mb-1">Nome da Empresa</div>
-                        <div className="text-[15px] font-medium">{ipData?.org || 'Vivo S.A.'}</div>
+                        <div className="text-[12px] text-text-dim mb-1 font-bold uppercase tracking-widest">Nome da Empresa</div>
+                        <div className="text-[15px] font-black text-white">{ipData?.org || 'Vivo S.A.'}</div>
                       </div>
                       <div>
-                        <div className="text-[12px] text-text-dim mb-1">Número ASN</div>
-                        <div className="text-[14px] font-mono text-brand-accent">{ipData?.asn || 'AS27699'}</div>
+                        <div className="text-[12px] text-text-dim mb-1 font-bold uppercase tracking-widest">Número ASN</div>
+                        <div className="text-[16px] font-black text-brand-accent tracking-widest">{ipData?.asn || 'AS27699'}</div>
                       </div>
                       <div>
-                        <div className="text-[12px] text-text-dim mb-1">Região de Acesso</div>
-                        <div className="text-[15px] font-medium">{ipData?.city}, {ipData?.region} - Brasil</div>
+                        <div className="text-[12px] text-text-dim mb-1 font-bold uppercase tracking-widest">Região de Acesso</div>
+                        <div className="text-[15px] font-black text-white">{ipData?.city}, {ipData?.region} - Brasil</div>
                       </div>
                     </div>
                   </div>
@@ -570,19 +589,19 @@ export default function App() {
                          
                          <div className="grid grid-cols-2 gap-4">
                             <div className="p-4 bg-bg-dark/40 rounded-xl border border-border-dim/30">
-                               <div className="text-[10px] text-text-dim uppercase mb-1">Cidade / Região</div>
-                               <div className="text-sm font-bold truncate">{validatorData.city}, {validatorData.regionName}</div>
+                               <div className="text-[10px] text-text-dim uppercase mb-1 font-black">Cidade / Região</div>
+                               <div className="text-sm font-black text-white truncate">{validatorData.city}, {validatorData.regionName}</div>
                             </div>
                             <div className="p-4 bg-bg-dark/40 rounded-xl border border-border-dim/30">
-                               <div className="text-[10px] text-text-dim uppercase mb-1">País</div>
-                               <div className="text-sm font-bold truncate">{validatorData.country}</div>
+                               <div className="text-[10px] text-text-dim uppercase mb-1 font-black">País</div>
+                               <div className="text-sm font-black text-white truncate">{validatorData.country}</div>
                             </div>
                          </div>
 
                          <div className="p-4 bg-bg-dark/40 rounded-xl border border-border-dim/30">
-                            <div className="text-[10px] text-text-dim uppercase mb-1">ASN & Provedor</div>
-                            <div className="text-sm font-bold text-brand-accent italic mb-1">{validatorData.as}</div>
-                            <div className="text-[10px] text-text-dim">{validatorData.isp} / {validatorData.org}</div>
+                            <div className="text-[10px] text-text-dim uppercase mb-1 font-black">ASN & Provedor</div>
+                            <div className="text-[15px] font-black text-brand-accent tracking-widest mb-1 uppercase tracking-tighter">{validatorData.as}</div>
+                            <div className="text-[10px] text-text-dim font-bold">{validatorData.isp} / {validatorData.org}</div>
                          </div>
 
                          {validatorData.lat && validatorData.lon && (

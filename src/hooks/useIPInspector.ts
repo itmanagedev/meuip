@@ -21,6 +21,10 @@ export interface SystemData {
   browser: string;
   ram: string;
   hostname: string;
+  cores: number;
+  language: string;
+  resolution: string;
+  platform: string;
 }
 
 export function useIPInspector() {
@@ -93,7 +97,11 @@ export function useIPInspector() {
           os: `${os.name} ${os.version || ''}`,
           browser: `${browser.name} ${browser.version}`,
           ram,
-          hostname: serverInfo.data.serverHostname || 'Desconhecido', // Real hostname is server-side only
+          hostname: serverInfo.data.serverHostname || 'ITM-NODE-PROD',
+          cores: navigator.hardwareConcurrency || 0,
+          language: navigator.language || 'pt-BR',
+          resolution: `${window.screen.width}x${window.screen.height}`,
+          platform: (navigator as any).platform || 'Desconhecido',
         });
 
       } catch (err) {
