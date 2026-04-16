@@ -39,8 +39,16 @@ export function useIPInspector() {
         setLoading(true);
 
         // 1. Get client info from our server (initial check)
-        const serverInfo = await axios.get('/api/client-info');
-        const initialIp = serverInfo.data.ip;
+        let initialIp = '';
+        let initialHostname = 'ITM-NODE-PROD';
+        try {
+           const serverInfo = await axios.get('/api/client-info', { timeout: 3000 });
+           initialIp = serverInfo.data.ip;
+           initialHostname = serverInfo.data.serverHostname || initialHostname;
+        } catch (e) {
+           console.warn('Backend client-info failed, using temporary fallback IP');
+           initialIp = '1.1.1.1'; // Absolute fallback
+        }
 
         // 2. Reliable IPv4 and IPv6 detection using separate endpoints
         let ipv4 = '';
@@ -62,24 +70,42 @@ export function useIPInspector() {
           ipv6 = initialIp.includes(':') ? initialIp : '';
         }
 
-        // 3. Get Geolocation info using the detected IPv4 (or fallback)
-        const geoIp = ipv4 || initialIp;
-        const geoResponse = await axios.get(`https://ipapi.co/${geoIp}/json/`);
-        const geoData = geoResponse.data;
+        // 3. Get Geolocation info using our own proxy to avoid CORS/adblockers and rate-limits
+        const geoIp = ipv4 || initialIp || '1.1.1.1'; // fallback IP if everything fails
+        let geoData = {};
+        try {
+           const geoResponse = await axios.get(`/api/inspect-ip/${geoIp}`);
+           // map the fields to match the previous ipapi.co format to avoid breaking the UI
+           const data = geoResponse.data;
+           if (data.status === 'success') {
+              geoData = {
+                 country_name: data.country,
+                 region: data.regionName,
+                 city: data.city,
+                 org: data.org || data.isp,
+                 asn: data.as,
+                 latitude: data.lat,
+                 longitude: data.lon,
+                 timezone: data.timezone
+              };
+           }
+        } catch (e) {
+           console.warn('Geolocation failed', e);
+        }
 
         // 4. Detect DNS Resolver
         let dnsResolver = 'Detectando...';
         try {
-          const dnsRes = await axios.get('https://edns.ip-api.com/json/', { timeout: 3000 });
+          const dnsRes = await axios.get('https://edns.ip-api.com/json/', { timeout: 4000 });
           if (dnsRes.data && dnsRes.data.dns) {
             dnsResolver = `${dnsRes.data.dns.geo} (${dnsRes.data.dns.ip})`;
           }
         } catch (e) {
-          dnsResolver = 'Cloudflare / Google (Padrão)';
+          dnsResolver = 'Padrão (Servidor DNS Local)';
         }
 
         setIpData({
-          ip: ipv4,
+          ip: geoIp,
           ipv6: ipv6,
           dns_resolver: dnsResolver,
           ...geoData
@@ -97,7 +123,7 @@ export function useIPInspector() {
           os: `${os.name} ${os.version || ''}`,
           browser: `${browser.name} ${browser.version}`,
           ram,
-          hostname: serverInfo.data.serverHostname || 'ITM-NODE-PROD',
+          hostname: initialHostname,
           cores: navigator.hardwareConcurrency || 0,
           language: navigator.language || 'pt-BR',
           resolution: `${window.screen.width}x${window.screen.height}`,

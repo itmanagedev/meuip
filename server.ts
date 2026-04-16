@@ -16,8 +16,20 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
-  app.get("/api/client-info", (req, res) => {
-    const ip = req.ip || req.socket.remoteAddress;
+  app.get("/api/client-info", async (req, res) => {
+    let ip = req.ip || req.socket.remoteAddress;
+    
+    // In dev / cloud run sometimes we just get localhost or private IPs
+    if (!ip || ip === '::1' || ip === '127.0.0.1' || ip.startsWith('::ffff:127.0.0.1') || ip.startsWith('10.')) {
+      try {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        ip = ipData.ip;
+      } catch(e) {
+        // Fallback if ipify is blocked, keep whatever we had
+      }
+    }
+
     res.json({
       ip,
       serverHostname: os.hostname(),
@@ -31,6 +43,25 @@ async function startServer() {
       // Use ip-api for rich data
       const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query`);
       const data = await response.json();
+
+      // If it looks like a domain, try to fetch DNS records
+      const domainPattern = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/;
+      if (domainPattern.test(ip)) {
+        const dns = await import("dns/promises");
+        try {
+          const [mx, ns] = await Promise.allSettled([
+            dns.resolveMx(ip),
+            dns.resolveNs(ip)
+          ]);
+          
+          data.dns_mx = mx.status === 'fulfilled' ? mx.value : [];
+          data.dns_ns = ns.status === 'fulfilled' ? ns.value : [];
+          data.is_domain = true;
+        } catch (e) {
+          console.error("DNS lookup error:", e);
+        }
+      }
+
       res.json(data);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch IP data" });

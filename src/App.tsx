@@ -17,6 +17,8 @@ import {
   Info,
   Server,
   Zap,
+  Briefcase,
+  Mail,
   ArrowRight,
   Menu,
   X
@@ -344,13 +346,14 @@ export default function App() {
             >
               {/* Main Network Stats */}
               <section className="lg:col-span-8 flex flex-col gap-5">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 gap-5">
                   {/* IP Card */}
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="md:col-span-2 bg-card-bg border border-border-dim rounded-2xl p-6 md:p-8 flex flex-col min-h-[auto] md:min-h-[320px] shadow-2xl relative overflow-hidden group"
-                  >
+                    <motion.div 
+                      key="main-ip-card"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-card-bg border border-border-dim rounded-2xl p-6 md:p-8 flex flex-col min-h-[auto] md:min-h-[320px] shadow-2xl relative overflow-hidden group"
+                    >
                     <div className="absolute top-0 right-0 w-32 h-32 bg-brand-accent/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-brand-accent/10 transition-colors" />
                     
                     <div className="flex items-center gap-3 text-[10px] md:text-[11px] text-text-dim uppercase tracking-[0.2em] font-bold mb-6 md:mb-10">
@@ -404,23 +407,6 @@ export default function App() {
                       </div>
                     </div>
                   </motion.div>
-
-                  {/* Integrated Map Integration */}
-                  <div className="hidden md:block bg-card-bg border border-border-dim rounded-2xl overflow-hidden relative group">
-                    {ipData?.latitude && ipData?.longitude ? (
-                      <div className="w-full h-full relative">
-                         <MapContainer center={[ipData.latitude, ipData.longitude]} zoom={10} style={{height: '100%', width: '100%'}} zoomControl={false} key={`meu-ip-map-sync-${ipData.latitude}`}>
-                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                            <Marker position={[ipData.latitude, ipData.longitude]} />
-                         </MapContainer>
-                         <div className="absolute bottom-3 left-3 z-[400] p-2 bg-bg-dark/90 backdrop-blur-sm border border-white/5 rounded-lg text-[9px] font-black text-brand-accent uppercase tracking-widest">
-                            LAT: {ipData.latitude} | LON: {ipData.longitude}
-                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-full bg-bg-dark/50 text-text-dim text-[10px] font-black uppercase">Mapeando...</div>
-                    )}
-                  </div>
                 </div>
 
                 {/* System Info Grid Expanded */}
@@ -476,60 +462,68 @@ export default function App() {
                 <motion.div 
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="bg-card-bg border border-border-dim rounded-xl overflow-hidden flex flex-col"
+                  className="bg-card-bg border border-border-dim rounded-2xl overflow-hidden flex flex-col group/provider"
                 >
-                  <div className="p-6 border-b border-border-dim">
-                    <div className="text-[11px] text-text-dim uppercase tracking-wider mb-6">Provedor & ASN</div>
-                    <div className="space-y-4">
-                      <div>
-                        <div className="text-[12px] text-text-dim mb-1 font-bold uppercase tracking-widest">Nome da Empresa</div>
-                        <div className="text-[15px] font-black text-white">{ipData?.org || 'Vivo S.A.'}</div>
+                  <div className="flex flex-col xl:flex-row divide-y xl:divide-y-0 xl:divide-x divide-border-dim">
+                    <div className="flex-1 p-8">
+                      <div className="text-[11px] text-text-dim uppercase tracking-[0.2em] mb-8 font-black flex items-center gap-2">
+                        <Briefcase className="w-3 h-3 text-brand-accent" /> Provedor & ASN
                       </div>
-                      <div>
-                        <div className="text-[12px] text-text-dim mb-1 font-bold uppercase tracking-widest">Número ASN</div>
-                        <div className="text-[16px] font-black text-brand-accent tracking-widest">{ipData?.asn || 'AS27699'}</div>
+                      <div className="space-y-6">
+                        <div>
+                          <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-widest">Nome da Empresa</div>
+                          <div className="text-[16px] font-black text-white">{ipData?.org || 'Vivo S.A.'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-widest">Número ASN</div>
+                          <div className="text-[18px] font-black text-brand-accent tracking-widest flex items-center gap-2">
+                             {ipData?.asn || 'AS27699'}
+                             <div className="text-[8px] px-1.5 py-0.5 bg-brand-accent/10 border border-brand-accent/20 rounded-md">BGP</div>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-widest">Região de Acesso</div>
+                          <div className="text-[15px] font-black text-white">{ipData?.city}, {ipData?.region} - Brasil</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-[12px] text-text-dim mb-1 font-bold uppercase tracking-widest">Região de Acesso</div>
-                        <div className="text-[15px] font-black text-white">{ipData?.city}, {ipData?.region} - Brasil</div>
-                      </div>
+                    </div>
+                    
+                    <div className="h-[250px] xl:h-auto xl:w-[350px] bg-bg-dark relative overflow-hidden">
+                      {ipData && ipData.latitude && ipData.longitude ? (
+                        <div className="h-full w-full relative">
+                           <MapContainer 
+                             center={[ipData.latitude, ipData.longitude]} 
+                             zoom={11} 
+                             style={{ height: '100%', width: '100%' }}
+                             zoomControl={false}
+                             className="z-0"
+                           >
+                             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                             <Marker position={[ipData.latitude, ipData.longitude]}>
+                               <Popup minWidth={180}>
+                                 <div className="bg-bg-dark border border-white/10 p-2 rounded text-white">
+                                    <p className="text-[9px] font-black uppercase text-brand-accent mb-1">Localização Detectada</p>
+                                    <p className="text-[10px] font-bold">{ipData.city}, {ipData.region}</p>
+                                 </div>
+                               </Popup>
+                             </Marker>
+                           </MapContainer>
+                           <div className="absolute top-4 right-4 z-[400] w-2.5 h-2.5 bg-brand-accent rounded-full animate-ping" />
+                           <div className="absolute top-4 right-4 z-[400] w-2.5 h-2.5 bg-brand-accent rounded-full" />
+                           <div className="absolute bottom-4 left-4 z-[400] px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-lg border border-white/10 text-[9px] font-black text-brand-accent uppercase tracking-widest">
+                              Lat: {ipData.latitude} | Lon: {ipData.longitude}
+                           </div>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-text-dim italic text-[10px] font-black uppercase tracking-widest">
+                          Mapeando Geolocalização...
+                        </div>
+                      )}
                     </div>
                   </div>
                   
-                  <motion.div 
-                    whileHover={{ scale: 1.01 }}
-                    className="flex-grow min-h-[220px] bg-bg-dark relative transition-shadow hover:shadow-2xl hover:shadow-brand-accent/10 cursor-crosshair overflow-hidden rounded-xl"
-                  >
-                    {ipData && ipData.latitude && ipData.longitude ? (
-                      <MapContainer 
-                        center={[ipData.latitude, ipData.longitude]} 
-                        zoom={12} 
-                        style={{ height: '100%', width: '100%' }}
-                        zoomControl={false}
-                        className="z-0"
-                      >
-                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        <Marker position={[ipData.latitude, ipData.longitude]}>
-                          <Popup minWidth={240}>
-                            <div className="bg-bg-dark border border-white/10 p-3 rounded-lg text-white">
-                               <p className="text-[10px] font-black uppercase text-brand-accent mb-2">Sua Geolocalização</p>
-                               <p className="text-xs font-bold">{ipData.city}, {ipData.region}</p>
-                               <p className="text-[10px] text-text-dim mt-1">{ipData.ip}</p>
-                            </div>
-                          </Popup>
-                        </Marker>
-                      </MapContainer>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-text-dim italic text-sm">
-                        Mapa indisponível
-                      </div>
-                    )}
-                    <div className="absolute top-4 right-4 z-10 w-3 h-3 bg-brand-accent rounded-full animate-ping opacity-75" />
-                    <div className="absolute top-4 right-4 z-10 w-3 h-3 bg-brand-accent rounded-full" />
-                  </motion.div>
-                  
-                  <div className="p-4 bg-bg-dark/50 text-[10px] text-text-dim leading-relaxed border-t border-border-dim">
-                    As coordenadas são baseadas no registro do ISP e podem não representar sua localização exata.
+                  <div className="p-4 bg-bg-dark/50 text-[10px] text-text-dim leading-relaxed border-t border-border-dim font-medium italic">
+                    Nodes iTmanage: Dados baseados em registros BGP públicos e geolocalização IP dinâmica.
                   </div>
                 </motion.div>
               </aside>
@@ -603,6 +597,36 @@ export default function App() {
                             <div className="text-[15px] font-black text-brand-accent tracking-widest mb-1 uppercase tracking-tighter">{validatorData.as}</div>
                             <div className="text-[10px] text-text-dim font-bold">{validatorData.isp} / {validatorData.org}</div>
                          </div>
+
+                         {validatorData.is_domain && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                               <div className="p-4 bg-bg-dark/40 rounded-xl border border-border-dim/30">
+                                  <div className="text-[10px] text-text-dim uppercase mb-2 font-black flex items-center gap-2">
+                                     <Mail className="w-3 h-3 text-brand-accent" /> Registros MX (Mail)
+                                  </div>
+                                  <div className="space-y-1.5">
+                                     {validatorData.dns_mx?.length > 0 ? validatorData.dns_mx.map((m: any, i: number) => (
+                                        <div key={i} className="text-[11px] font-mono text-white/80 flex justify-between">
+                                           <span className="truncate pr-2">{m.exchange}</span>
+                                           <span className="text-brand-accent font-black">[{m.priority}]</span>
+                                        </div>
+                                     )) : <span className="text-[10px] text-text-dim italic">Nenhum registro encontrado</span>}
+                                  </div>
+                               </div>
+                               <div className="p-4 bg-bg-dark/40 rounded-xl border border-border-dim/30">
+                                  <div className="text-[10px] text-text-dim uppercase mb-2 font-black flex items-center gap-2">
+                                     <Server className="w-3 h-3 text-brand-accent" /> Name Servers (NS)
+                                  </div>
+                                  <div className="space-y-1.5">
+                                     {validatorData.dns_ns?.length > 0 ? validatorData.dns_ns.map((n: string, i: number) => (
+                                        <div key={i} className="text-[11px] font-mono text-white/80 truncate">
+                                           {n}
+                                        </div>
+                                     )) : <span className="text-[10px] text-text-dim italic">Nenhum registro encontrado</span>}
+                                  </div>
+                               </div>
+                            </div>
+                         )}
 
                          {validatorData.lat && validatorData.lon && (
                             <div className="h-[200px] rounded-xl overflow-hidden border border-border-dim relative group">
@@ -1010,15 +1034,26 @@ export default function App() {
     </main>
 
       {/* Footer */}
-      <footer className="py-16 border-t border-border-dim text-center space-y-6">
-        <div className="flex items-center justify-center gap-8 text-[11px] uppercase tracking-[0.1em] font-bold text-text-dim">
-          <a href="#" className="hover:text-brand-accent transition-colors">Suporte</a>
-          <a href="#" className="hover:text-brand-accent transition-colors">Termos</a>
-          <a href="#" className="hover:text-brand-accent transition-colors">Privacidade</a>
-          <a href="#" className="hover:text-brand-accent transition-colors">iTmanage Cloud</a>
+      <footer className="py-20 border-t border-border-dim text-center space-y-8 bg-black/20">
+        <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4 text-[11px] uppercase tracking-[0.2em] font-black text-text-dim/60">
+          <a href="#" className="hover:text-brand-accent transition-all hover:tracking-[0.3em]">Suporte Técnico</a>
+          <a href="#" className="hover:text-brand-accent transition-all hover:tracking-[0.3em]">Termos de Uso</a>
+          <a href="#" className="hover:text-brand-accent transition-all hover:tracking-[0.3em]">Compliance</a>
+          <a href="/about" className="hover:text-brand-accent transition-all hover:tracking-[0.3em]">Sobre nós</a>
+          <a 
+            href="https://itmanage.com.br" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="px-4 py-2 border border-brand-accent/30 rounded-full text-brand-accent hover:bg-brand-accent hover:text-white transition-all scale-105"
+          >
+            Visite iTmanage.com.br
+          </a>
         </div>
-        <div className="text-[12px] font-mono text-text-dim/50 italic">
-          v2.4.0-stable | iTmanage Tecnologia &copy; 2026
+        <div className="text-[12px] font-mono text-text-dim/30 flex flex-col items-center gap-1">
+          <div className="flex items-center gap-2">
+            <Shield className="w-3 h-3" /> INFRAESTRUTURA CERTIFICADA
+          </div>
+          <span className="italic">v2.5.0-stable | iTmanage Tecnologia &copy; 2026</span>
         </div>
       </footer>
     </div>
