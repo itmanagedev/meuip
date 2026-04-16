@@ -241,11 +241,33 @@ export default function App() {
         <motion.div 
           animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
           transition={{ repeat: Infinity, duration: 1.5 }}
-          className="flex flex-col items-center gap-4"
+          className="flex flex-col items-center gap-4 text-center px-6"
         >
           <div className="w-12 h-12 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
-          <span className="font-mono text-xs tracking-[0.2em] uppercase">Iniciando Monitoramento...</span>
+          <span className="font-mono text-xs tracking-[0.2em] uppercase">Sincronizando iTmanage Backend...</span>
         </motion.div>
+      </div>
+    );
+  }
+
+  if (error && !ipData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg-dark text-white p-6">
+        <div className="bg-card-bg border border-red-500/30 p-8 rounded-2xl max-w-md w-full text-center space-y-6 shadow-2xl">
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
+            <X className="w-8 h-8 text-red-500" />
+          </div>
+          <div>
+            <h2 className="text-xl font-black uppercase tracking-tighter italic mb-2">Falha na Inicialização</h2>
+            <p className="text-text-dim text-sm">{error}</p>
+          </div>
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full py-4 bg-brand-accent text-white rounded-xl font-bold uppercase tracking-widest text-xs hover:brightness-110 active:scale-95 transition-all"
+          >
+            Tentar Novamente
+          </button>
+        </div>
       </div>
     );
   }
@@ -255,16 +277,13 @@ export default function App() {
       {/* Navigation Header */}
       <header className="sticky top-0 z-50 border-b border-border-dim bg-bg-dark/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2 md:gap-3">
-              <div className="p-1.5 md:p-2 bg-brand-accent/10 rounded-lg md:rounded-xl border border-brand-accent/20">
-                <Box className="w-4 h-4 md:w-5 md:h-5 text-brand-accent" />
-              </div>
-              <span className="text-[18px] md:text-[22px] font-extrabold tracking-tighter text-white italic leading-none">
-                iT<span className="text-brand-accent not-italic">manage</span>
-              </span>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 bg-brand-accent/10 rounded-lg md:rounded-xl border border-brand-accent/20">
+              <Box className="w-4 h-4 md:w-5 md:h-5 text-brand-accent" />
             </div>
-            <span className="text-[9px] md:text-[10px] text-text-dim/60 font-mono tracking-wider ml-1">meuip.itmanage.com.br</span>
+            <span className="text-[18px] md:text-[22px] font-extrabold tracking-tighter text-white italic leading-none">
+              iT<span className="text-brand-accent not-italic">manage</span>
+            </span>
           </div>
 
           <div className="hidden lg:flex items-center gap-2 bg-bg-dark/40 p-1 rounded-2xl border border-border-dim/50">
@@ -427,26 +446,43 @@ export default function App() {
                 </motion.div>
 
                 {/* System Info Grid */}
-                <div className="md:col-span-2 bg-card-bg border border-border-dim rounded-xl p-5 md:p-6 text-center sm:text-left">
-                  <div className="text-[10px] md:text-[11px] text-text-dim uppercase tracking-wider mb-6 flex items-center justify-center sm:justify-start gap-2">
-                    <Cpu className="w-3 h-3" /> Informações do Sistema
+                <div className="md:col-span-2 bg-card-bg border border-border-dim rounded-xl p-5 md:p-8 text-center sm:text-left overflow-hidden relative">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-brand-accent/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-brand-accent/10 transition-colors" />
+                  
+                  <div className="text-[10px] md:text-[11px] text-text-dim uppercase tracking-widest mb-8 flex items-center justify-center sm:justify-start gap-2 font-bold ring-1 ring-white/5 py-1 px-3 w-fit rounded-full bg-white/5">
+                    <Cpu className="w-3.5 h-3.5 text-brand-accent" /> Auditoria de Hardware & OS
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8 md:gap-x-12">
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-8 md:gap-x-12">
                     <div>
-                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Nome do Dispositivo</div>
-                      <div className="text-[14px] md:text-[15px] font-medium truncate">{systemData?.hostname || 'ITM-WORKSTATION'}</div>
+                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Machine Hostname</div>
+                      <div className="text-[14px] md:text-[15px] font-mono text-brand-accent font-black truncate">{systemData?.hostname || 'iTmanage-Node'}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Sistema Operacional</div>
+                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Stack Operacional</div>
                       <div className="text-[14px] md:text-[15px] font-medium truncate">{systemData?.os}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Memória RAM</div>
-                      <div className="text-[14px] md:text-[15px] font-medium">{systemData?.ram}</div>
+                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Browser Engine</div>
+                      <div className="text-[14px] md:text-[15px] font-medium truncate">{systemData?.browser}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Tempo de Atividade</div>
-                      <div className="text-[14px] md:text-[15px] font-medium">04d 12h 31m</div>
+                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Alocação de RAM</div>
+                      <div className="text-[14px] md:text-[15px] font-medium text-brand-success">{systemData?.ram}</div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Display / Resolução</div>
+                      <div className="text-[14px] md:text-[15px] font-medium">{systemData?.resolution}</div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Localização / Idioma</div>
+                      <div className="text-[14px] md:text-[15px] font-medium uppercase tracking-widest">{systemData?.language}</div>
+                    </div>
+                    <div className="sm:col-span-2 md:col-span-3">
+                      <div className="text-[11px] text-text-dim mb-1 font-bold uppercase tracking-tighter">Acelerador Gráfico (GPU)</div>
+                      <div className="text-[13px] md:text-[14px] font-mono text-text-dim/80 truncate bg-bg-dark/40 p-3 rounded-lg border border-border-dim/50 leading-relaxed italic">
+                        {systemData?.gpu || 'Software Rendering Only'}
+                      </div>
                     </div>
                   </div>
                 </div>

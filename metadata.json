@@ -1,5 +1,5 @@
 {
-  "name": "iTmanage - Monitor de IP",
+  "name": "Meu IP | iTmanage",
   "description": "Ferramenta profissional e avançada para auditoria de rede, monitoramento de IP e diagnóstico de latência iTmanage.",
   "requestFramePermissions": [
     "geolocation"
