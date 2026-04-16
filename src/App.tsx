@@ -235,46 +235,6 @@ export default function App() {
     { id: 'rastreio', label: 'Rastreio', icon: MapIcon },
   ];
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-bg-dark text-brand-accent">
-        <motion.div 
-          animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
-          transition={{ repeat: Infinity, duration: 1.5 }}
-          className="flex flex-col items-center gap-4 text-center px-6"
-        >
-          <div className="w-12 h-12 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
-          <span className="font-mono text-xs tracking-[0.2em] uppercase">Sincronizando iTmanage Backend...</span>
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-bg-dark text-white p-6">
-        <div className="bg-card-bg border border-red-500/30 p-8 rounded-2xl max-w-md w-full text-center space-y-6 shadow-2xl">
-          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto transition-transform hover:scale-110">
-            <X className="w-8 h-8 text-red-500" />
-          </div>
-          <div>
-            <h2 className="text-xl font-black uppercase tracking-tighter italic mb-2">Erro de Conexão</h2>
-            <p className="text-text-dim text-sm leading-relaxed">{error}</p>
-          </div>
-          <div className="pt-4 border-t border-white/5 space-y-3">
-            <button 
-              onClick={() => window.location.reload()}
-              className="w-full py-4 bg-brand-accent text-white rounded-xl font-bold uppercase tracking-widest text-[10px] hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-brand-accent/20"
-            >
-              Forçar Recarregamento
-            </button>
-            <p className="text-[9px] text-text-dim/50 uppercase tracking-widest">Aguarde alguns segundos e tente novamente</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-bg-dark text-white font-sans selection:bg-brand-accent/30">
       {/* Navigation Header */}
@@ -359,6 +319,30 @@ export default function App() {
       </AnimatePresence>
 
       <main className="max-w-7xl mx-auto px-6 py-10">
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-500/20 rounded-lg">
+                <Info className="w-4 h-4 text-red-500" />
+              </div>
+              <p className="text-xs text-red-500/80 font-medium">
+                <span className="font-black uppercase mr-2 text-red-500">Aviso de Rede:</span> 
+                {error}
+              </p>
+            </div>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+            >
+              Recarregar
+            </button>
+          </motion.div>
+        )}
+
         <AnimatePresence mode="wait">
           {activeTab === 'meu-ip' && (
             <motion.div 
