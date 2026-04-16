@@ -250,23 +250,26 @@ export default function App() {
     );
   }
 
-  if (error && !ipData) {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg-dark text-white p-6">
         <div className="bg-card-bg border border-red-500/30 p-8 rounded-2xl max-w-md w-full text-center space-y-6 shadow-2xl">
-          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto transition-transform hover:scale-110">
             <X className="w-8 h-8 text-red-500" />
           </div>
           <div>
-            <h2 className="text-xl font-black uppercase tracking-tighter italic mb-2">Falha na Inicialização</h2>
-            <p className="text-text-dim text-sm">{error}</p>
+            <h2 className="text-xl font-black uppercase tracking-tighter italic mb-2">Erro de Conexão</h2>
+            <p className="text-text-dim text-sm leading-relaxed">{error}</p>
           </div>
-          <button 
-            onClick={() => window.location.reload()}
-            className="w-full py-4 bg-brand-accent text-white rounded-xl font-bold uppercase tracking-widest text-xs hover:brightness-110 active:scale-95 transition-all"
-          >
-            Tentar Novamente
-          </button>
+          <div className="pt-4 border-t border-white/5 space-y-3">
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full py-4 bg-brand-accent text-white rounded-xl font-bold uppercase tracking-widest text-[10px] hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-brand-accent/20"
+            >
+              Forçar Recarregamento
+            </button>
+            <p className="text-[9px] text-text-dim/50 uppercase tracking-widest">Aguarde alguns segundos e tente novamente</p>
+          </div>
         </div>
       </div>
     );
@@ -405,7 +408,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    {ipData?.ip && (
+                    {ipData?.ip && ipData.ip !== '0.0.0.0' && (
                       <div className="hidden sm:flex shrink-0 p-4 bg-white/5 border border-white/5 rounded-2xl flex-col items-center gap-3 self-center sm:self-start group-hover:border-brand-accent/20 transition-all">
                         <div className="p-2 bg-white rounded-lg">
                           <QRCodeSVG 
@@ -518,7 +521,7 @@ export default function App() {
                     animate={{ opacity: 1 }}
                     className="h-[220px] bg-bg-dark relative overflow-hidden group"
                   >
-                    {ipData && ipData.latitude && ipData.longitude ? (
+                    {ipData && ipData.latitude && ipData.longitude && typeof window !== 'undefined' ? (
                       <MapContainer 
                         center={[ipData.latitude, ipData.longitude]} 
                         zoom={12} 
@@ -531,12 +534,15 @@ export default function App() {
                         <Marker position={[ipData.latitude, ipData.longitude]} />
                       </MapContainer>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-text-dim italic text-[10px] uppercase tracking-widest">
-                        Mapa indisponível
+                      <div className="w-full h-full flex flex-col items-center justify-center text-text-dim gap-3 p-10 text-center">
+                        <MapIcon className="w-8 h-8 opacity-20" />
+                        <span className="italic text-[10px] uppercase tracking-widest leading-relaxed">
+                          {ipData ? 'Geolocalização não disponível para este range' : 'Mapeamento em andamento...'}
+                        </span>
                       </div>
                     )}
                     <div className="absolute bottom-3 left-3 z-10 p-2 bg-bg-dark/80 backdrop-blur-sm rounded-lg text-[9px] text-text-dim border border-white/5">
-                      LAT: {ipData?.latitude} | LON: {ipData?.longitude}
+                      LAT: {ipData?.latitude || '--'} | LON: {ipData?.longitude || '--'}
                     </div>
                   </motion.div>
                   
@@ -616,7 +622,7 @@ export default function App() {
                             <div className="text-[10px] text-text-dim">{validatorData.isp} / {validatorData.org}</div>
                          </div>
 
-                         {validatorData.lat && validatorData.lon && (
+                         {validatorData.lat && validatorData.lon && typeof window !== 'undefined' ? (
                             <div className="h-[200px] rounded-xl overflow-hidden border border-border-dim relative group">
                                <MapContainer center={[validatorData.lat, validatorData.lon]} zoom={10} style={{height: '100%'}} zoomControl={false} key={`${validatorData.lat}-${validatorData.lon}`}>
                                   <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -625,6 +631,10 @@ export default function App() {
                                <div className="absolute bottom-3 left-3 z-10 p-2 bg-bg-dark/80 backdrop-blur-sm rounded-lg text-[9px] text-text-dim border border-white/5">
                                   LAT: {validatorData.lat} | LON: {validatorData.lon}
                                </div>
+                            </div>
+                         ) : validatorData.lat && (
+                            <div className="h-[200px] bg-bg-dark border border-border-dim rounded-xl flex items-center justify-center text-text-dim italic text-xs uppercase tracking-widest">
+                               Preparando Visualização do Mapa...
                             </div>
                          )}
 

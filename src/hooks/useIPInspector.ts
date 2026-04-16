@@ -33,8 +33,17 @@ export function useIPInspector() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+    const globalTimeout = setTimeout(() => {
+      if (active && loading) {
+        setLoading(false);
+        setError('Ocorreu um tempo de limite ao carregar os dados. Verifique sua conexão.');
+      }
+    }, 15000); // 15s global safety timeout
+
     async function fetchData() {
       try {
+        if (!active) return;
         setLoading(true);
         setError(null);
 
@@ -69,26 +78,27 @@ export function useIPInspector() {
         const geoIp = ipv4 || serverIp;
         
         try {
-          // Attempt 1: ipapi.co
-          const geoRes1 = await axios.get(`https://ipapi.co/${geoIp}/json/`, { timeout: 5000 });
-          if (!geoRes1.data.error) geoData = geoRes1.data;
-          else throw new Error('ipapi limit');
+          // Attempt 1: Server-side proxy (Resilient, avoids CORS/Mixed-Content)
+          const geoResServer = await axios.get(`/api/inspect-ip/${geoIp}`, { timeout: 6000 });
+          if (geoResServer.data && geoResServer.data.status === 'success') {
+            geoData = {
+              city: geoResServer.data.city,
+              region: geoResServer.data.regionName,
+              country_name: geoResServer.data.country,
+              org: geoResServer.data.isp,
+              asn: geoResServer.data.as,
+              latitude: geoResServer.data.lat,
+              longitude: geoResServer.data.lon,
+              timezone: geoResServer.data.timezone
+            };
+          } else {
+            throw new Error('Server geo failed');
+          }
         } catch (e) {
           try {
-            // Attempt 2: ip-api.com (via server proxy to avoid CORS if needed, or direct)
-            const geoRes2 = await axios.get(`http://ip-api.com/json/${geoIp}`);
-            if (geoRes2.data.status === 'success') {
-              geoData = {
-                city: geoRes2.data.city,
-                region: geoRes2.data.regionName,
-                country_name: geoRes2.data.country,
-                org: geoRes2.data.isp,
-                asn: geoRes2.data.as,
-                latitude: geoRes2.data.lat,
-                longitude: geoRes2.data.lon,
-                timezone: geoRes2.data.timezone
-              };
-            }
+            // Attempt 2: Client-side fallback (ipapi.co)
+            const geoRes1 = await axios.get(`https://ipapi.co/${geoIp}/json/`, { timeout: 4000 });
+            if (geoRes1.data && !geoRes1.data.error) geoData = geoRes1.data;
           } catch (e2) {
             console.error('All geo fallbacks failed');
           }
@@ -151,6 +161,11 @@ export function useIPInspector() {
     }
 
     fetchData();
+
+    return () => {
+      active = false;
+      clearTimeout(globalTimeout);
+    };
   }, []);
 
   return { ipData, systemData, loading, error };
