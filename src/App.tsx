@@ -223,13 +223,13 @@ export default function App() {
   return (
     <div className="min-h-screen bg-bg-dark text-white font-sans selection:bg-brand-accent/30">
       {/* Navigation Header */}
-      <header className="sticky top-0 z-50 border-b border-border-dim bg-bg-dark/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-brand-accent/10 rounded-xl border border-brand-accent/20">
-              <Box className="w-5 h-5 text-brand-accent" />
+              <header className="sticky top-0 z-50 border-b border-border-dim bg-bg-dark/80 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 bg-brand-accent/10 rounded-lg md:rounded-xl border border-brand-accent/20">
+              <Box className="w-4 h-4 md:w-5 md:h-5 text-brand-accent" />
             </div>
-            <span className="text-[22px] font-extrabold tracking-tighter text-white italic leading-none">
+            <span className="text-[18px] md:text-[22px] font-extrabold tracking-tighter text-white italic leading-none">
               iT<span className="text-brand-accent not-italic">manage</span>
             </span>
           </div>
@@ -314,37 +314,37 @@ export default function App() {
               className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start"
             >
               {/* Main Network Stats */}
-              <section className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-5">
+              <section className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                 
                 {/* IP Card */}
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="md:col-span-2 bg-card-bg border border-border-dim rounded-2xl p-8 flex flex-col min-h-[320px] shadow-2xl relative overflow-hidden group"
+                  className="md:col-span-2 bg-card-bg border border-border-dim rounded-2xl p-6 md:p-8 flex flex-col min-h-[auto] md:min-h-[320px] shadow-2xl relative overflow-hidden group"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-brand-accent/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-brand-accent/10 transition-colors" />
                   
-                  <div className="flex items-center gap-3 text-[11px] text-text-dim uppercase tracking-[0.2em] font-bold mb-10">
+                  <div className="flex items-center gap-3 text-[10px] md:text-[11px] text-text-dim uppercase tracking-[0.2em] font-bold mb-6 md:mb-10">
                     <div className="p-1.5 bg-brand-accent/10 rounded-lg">
                       <Globe className="w-3.5 h-3.5 text-brand-accent" />
                     </div>
                     Endereços de Rede Ativos
                   </div>
                   
-                  <div className="space-y-10">
+                  <div className="space-y-6 md:space-y-10">
                     <div className="relative">
-                      <div className="text-[12px] text-text-dim mb-2 flex items-center gap-2">
+                      <div className="text-[11px] md:text-[12px] text-text-dim mb-2 flex items-center gap-2">
                         <Shield className="w-3 h-3" /> Protocolo IPv4 (Principal)
                       </div>
-                      <div className="font-mono text-[34px] md:text-[42px] text-brand-accent glow-text font-black leading-none tracking-tighter">
+                      <div className="font-mono text-[28px] sm:text-[34px] md:text-[42px] text-brand-accent glow-text font-black leading-none tracking-tighter break-all">
                         {ipData?.ip || 'Detectando...'}
                       </div>
                     </div>
                     
                     <div className="p-4 bg-bg-dark/40 border-l-2 border-border-dim rounded-r-xl">
-                      <div className="text-[12px] text-text-dim mb-2">Protocolo IPv6 (Secundário)</div>
+                      <div className="text-[11px] md:text-[12px] text-text-dim mb-2">Protocolo IPv6 (Secundário)</div>
                       <div className={cn(
-                        "font-mono text-[13px] break-all leading-relaxed italic font-bold",
+                        "font-mono text-[11px] sm:text-[13px] break-all leading-relaxed italic font-bold",
                         ipData?.ipv6 ? "text-text-dim/80" : "text-red-500"
                       )}>
                         {ipData?.ipv6 ? ipData.ipv6 : 'Sem endereço IPv6'}
@@ -377,26 +377,26 @@ export default function App() {
                 </motion.div>
 
                 {/* System Info Grid */}
-                <div className="md:col-span-2 bg-card-bg border border-border-dim rounded-xl p-6">
-                  <div className="text-[11px] text-text-dim uppercase tracking-wider mb-6 flex items-center gap-2">
+                <div className="md:col-span-2 bg-card-bg border border-border-dim rounded-xl p-5 md:p-6 text-center sm:text-left">
+                  <div className="text-[10px] md:text-[11px] text-text-dim uppercase tracking-wider mb-6 flex items-center justify-center sm:justify-start gap-2">
                     <Cpu className="w-3 h-3" /> Informações do Sistema
                   </div>
-                  <div className="grid grid-cols-2 gap-y-6 gap-x-12">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8 md:gap-x-12">
                     <div>
-                      <div className="text-[12px] text-text-dim mb-1">Nome do Dispositivo</div>
-                      <div className="text-[15px] font-medium truncate">{systemData?.hostname || 'ITM-WORKSTATION'}</div>
+                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Nome do Dispositivo</div>
+                      <div className="text-[14px] md:text-[15px] font-medium truncate">{systemData?.hostname || 'ITM-WORKSTATION'}</div>
                     </div>
                     <div>
-                      <div className="text-[12px] text-text-dim mb-1">Sistema Operacional</div>
-                      <div className="text-[15px] font-medium truncate">{systemData?.os}</div>
+                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Sistema Operacional</div>
+                      <div className="text-[14px] md:text-[15px] font-medium truncate">{systemData?.os}</div>
                     </div>
                     <div>
-                      <div className="text-[12px] text-text-dim mb-1">Memória RAM</div>
-                      <div className="text-[15px] font-medium">{systemData?.ram}</div>
+                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Memória RAM</div>
+                      <div className="text-[14px] md:text-[15px] font-medium">{systemData?.ram}</div>
                     </div>
                     <div>
-                      <div className="text-[12px] text-text-dim mb-1">Tempo de Atividade</div>
-                      <div className="text-[15px] font-medium">04d 12h 31m</div>
+                      <div className="text-[11px] md:text-[12px] text-text-dim mb-1 font-bold">Tempo de Atividade</div>
+                      <div className="text-[14px] md:text-[15px] font-medium">04d 12h 31m</div>
                     </div>
                   </div>
                 </div>
@@ -479,29 +479,29 @@ export default function App() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="grid grid-cols-1 lg:grid-cols-12 gap-5"
               >
-                <div className="lg:col-span-12 bg-card-bg border border-border-dim rounded-2xl p-8 mb-4">
+                <div className="lg:col-span-12 bg-card-bg border border-border-dim rounded-2xl p-5 md:p-8 mb-4">
                    <div className="flex flex-col md:flex-row items-center gap-6">
-                      <div className="p-4 bg-brand-accent/10 rounded-2xl border border-brand-accent/20">
+                      <div className="p-4 bg-brand-accent/10 rounded-2xl border border-brand-accent/20 hidden sm:block">
                          <Shield className="w-8 h-8 text-brand-accent" />
                       </div>
                       <div className="flex-grow text-center md:text-left">
-                         <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Validador de Rede Avançado</h2>
-                         <p className="text-text-dim text-sm">Audite qualquer endereço IP ou Domínio global com infraestrutura iTmanage.</p>
+                         <h2 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter">Validador de Rede Avançado</h2>
+                         <p className="text-text-dim text-xs md:text-sm">Audite qualquer endereço IP ou Domínio global com infraestrutura iTmanage.</p>
                       </div>
-                      <div className="flex gap-2 w-full md:w-auto">
+                      <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                          <input 
                             value={targetIP}
                             onChange={(e) => setTargetIP(e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleAnalyzeIP();
+                               if (e.key === 'Enter') handleAnalyzeIP();
                             }}
                             placeholder="8.8.8.8 ou google.com"
-                            className="bg-bg-dark border border-border-dim rounded-xl px-6 py-4 text-sm font-mono flex-grow md:w-[300px] focus:border-brand-accent outline-none"
+                            className="bg-bg-dark border border-border-dim rounded-xl px-6 py-4 text-sm font-mono flex-grow md:w-[300px] focus:border-brand-accent outline-none w-full sm:w-auto text-center sm:text-left"
                          />
                          <button 
                             onClick={() => handleAnalyzeIP()}
                             disabled={isValidating}
-                            className="bg-brand-accent px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:brightness-110 active:scale-95 transition-all flex items-center gap-2"
+                            className="bg-brand-accent px-8 py-4 sm:py-0 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 min-h-[52px] w-full sm:w-auto"
                          >
                             {isValidating ? <Activity className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
                             Analisar
@@ -570,23 +570,24 @@ export default function App() {
                 </div>
 
                 <div className="lg:col-span-7 bg-card-bg border border-border-dim rounded-2xl p-8 space-y-8">
-                   <div className="flex items-center justify-between">
+                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div className="text-[11px] font-bold text-text-dim uppercase tracking-widest">Scanner de Portas TCP</div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                          <div className="relative">
                             <input 
                                value={manualPort}
                                onChange={(e) => setManualPort(e.target.value)}
                                placeholder="Porta Manual"
-                               className="bg-bg-dark border border-border-dim rounded-lg px-3 py-2 text-[10px] font-bold w-[100px] focus:border-brand-accent outline-none"
+                               className="bg-bg-dark border border-border-dim rounded-lg px-3 py-2 text-[10px] font-bold w-full sm:w-[100px] focus:border-brand-accent outline-none"
                             />
                          </div>
                          <button 
                             disabled={!targetIP || isScanningPorts}
                             onClick={() => handleScanPorts(manualPort ? parseInt(manualPort) : undefined)}
-                            className="p-2 bg-brand-accent/10 text-brand-accent rounded-lg hover:bg-brand-accent hover:text-white transition-all"
+                            className="px-4 py-3 sm:py-2 bg-brand-accent text-white rounded-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest whitespace-nowrap"
                          >
                             <Activity className={cn("w-4 h-4", isScanningPorts && "animate-spin")} />
+                            Analisar Portas
                          </button>
                       </div>
                    </div>
@@ -608,11 +609,19 @@ export default function App() {
                       })}
                       {manualPort && portResults.find(r => r.port === parseInt(manualPort)) && (
                          <div className={cn(
-                            "p-5 border rounded-2xl text-center space-y-2 bg-brand-accent/10 border-brand-accent/30"
+                            "p-5 border rounded-2xl text-center space-y-2 transition-all group",
+                            portResults.find(r => r.port === parseInt(manualPort))?.status === 'open' 
+                              ? "bg-brand-success/10 border-brand-success/30" 
+                              : "bg-red-500/10 border-red-500/30"
                          )}>
-                            <div className="text-[9px] font-black text-white uppercase tracking-widest">Manual: {manualPort}</div>
+                            <div className="text-[9px] font-black text-text-dim uppercase tracking-widest group-hover:text-white">Manual: {manualPort}</div>
                             <div className="text-xl font-black font-mono">{manualPort}</div>
-                            <div className="text-[8px] font-black uppercase text-brand-accent">{portResults.find(r => r.port === parseInt(manualPort))?.status}</div>
+                            <div className={cn(
+                               "text-[8px] font-black uppercase",
+                               portResults.find(r => r.port === parseInt(manualPort))?.status === 'open' ? "text-brand-success" : "text-red-500"
+                            )}>
+                               {portResults.find(r => r.port === parseInt(manualPort))?.status}
+                            </div>
                          </div>
                       )}
                    </div>
@@ -851,13 +860,13 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="flex gap-3 mb-8">
+                <div className="flex flex-col sm:flex-row gap-3 mb-8">
                   <div className="relative flex-grow">
                     <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-dim" />
                     <input 
                       id="trace-host-main"
                       placeholder="Ex: google.com ou 1.1.1.1"
-                      className="w-full bg-bg-dark border border-border-dim rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-brand-accent transition-all shadow-inner font-mono text-white"
+                      className="w-full bg-bg-dark border border-border-dim rounded-xl pl-12 pr-4 py-4 sm:py-3 text-sm focus:outline-none focus:border-brand-accent transition-all shadow-inner font-mono text-white"
                     />
                   </div>
                   <button 
@@ -871,7 +880,7 @@ export default function App() {
                         const res = await axios.get(`/api/traceroute/${host}`);
                         resultsDiv.innerHTML = `
                           <div class="overflow-x-auto w-full">
-                            <table class="w-full text-left border-separate border-spacing-y-2">
+                            <table class="w-full text-left border-separate border-spacing-y-2 min-w-[600px]">
                               <thead>
                                 <tr class="text-[10px] font-black uppercase text-text-dim/60 tracking-widest px-4">
                                   <th class="pb-4 px-4 font-black">HO</th>
@@ -910,7 +919,7 @@ export default function App() {
                         `;
                       } catch(e) { resultsDiv.innerHTML = '<p class="text-red-500 p-10 text-center">Erro ao realizar o rastreio.</p>'; }
                     }}
-                    className="px-8 bg-brand-accent text-white font-bold rounded-xl text-xs uppercase tracking-widest hover:brightness-110 shadow-lg shadow-brand-accent/20 transition-all flex items-center gap-2"
+                    className="px-8 py-4 sm:py-0 bg-brand-accent text-white font-bold rounded-xl text-xs uppercase tracking-widest hover:brightness-110 shadow-lg shadow-brand-accent/20 transition-all flex items-center justify-center gap-2 min-h-[52px]"
                   >
                     Iniciar Rastreio <Zap className="w-3 h-3" />
                   </button>
