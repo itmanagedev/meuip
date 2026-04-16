@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand-accent: #3E63DD;
+  --color-brand-success: #30A46C;
+  --color-bg-dark: #0A0B0E;
+  --color-card-bg: #16191F;
+  --color-border-dim: #2D3139;
+  --color-text-dim: #889096;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-dark text-white font-sans antialiased;
+    background-image: 
+      radial-gradient(circle at 50% 10%, rgba(62, 99, 221, 0.08) 0%, transparent 60%);
+    background-attachment: fixed;
+  }
+}
+
+.glow-text {
+  text-shadow: 0 0 10px rgba(62, 99, 221, 0.3);
+}
+
+.dns-info-box {
+  background: rgba(62, 99, 221, 0.05);
+  border-left: 3px solid var(--color-brand-accent);
+}
+
+/* Leaflet dark theme customization */
+.leaflet-container {
+  background: #0A0B0E !important;
+  border-radius: 8px;
+}
+.leaflet-tile {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
+.speed-value {
+  @apply text-[42px] font-bold tracking-tighter leading-none;
+}
+
+.speed-unit {
+  @apply text-text-dim text-sm font-medium;
+}

@@ -1,0 +1,134 @@
+import express from "express";
+import { createServer as createViteServer } from "vite";
+import path from "path";
+import { fileURLToPath } from "url";
+import os from "os";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+async function startServer() {
+  const app = express();
+  const PORT = 3000;
+
+  // Add trust proxy to get correct client IP behind Nginx
+  app.set('trust proxy', true);
+  app.use(express.json());
+
+  // API Routes
+  app.get("/api/client-info", (req, res) => {
+    const ip = req.ip || req.socket.remoteAddress;
+    res.json({
+      ip,
+      serverHostname: os.hostname(),
+    });
+  });
+
+  // IP Validator & Info API
+  app.get("/api/inspect-ip/:ip", async (req, res) => {
+    const { ip } = req.params;
+    try {
+      // Use ip-api for rich data
+      const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query`);
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch IP data" });
+    }
+  });
+
+  // Basic Port Scanner
+  app.post("/api/scan-ports", async (req, res) => {
+    const { host, ports } = req.body;
+    if (!host || !Array.isArray(ports)) {
+      return res.status(400).json({ error: "Invalid parameters" });
+    }
+
+    const net = await import("net");
+    const results = await Promise.all(
+      ports.slice(0, 10).map((port: number) => { // Limited to 10 for safety/speed
+        return new Promise((resolve) => {
+          const socket = new net.Socket();
+          socket.setTimeout(2000);
+          socket.on("connect", () => {
+            socket.destroy();
+            resolve({ port, status: "open" });
+          })
+          .on("timeout", () => {
+            socket.destroy();
+            resolve({ port, status: "timeout" });
+          })
+          .on("error", () => {
+            socket.destroy();
+            resolve({ port, status: "closed" });
+          })
+          .connect(port, host);
+        });
+      })
+    );
+    res.json({ host, results });
+  });
+
+  // Simulated Ping
+  app.get("/api/ping/:host", async (req, res) => {
+    const { host } = req.params;
+    const start = Date.now();
+    try {
+      const response = await fetch(`http://${host}`, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+      const latency = Date.now() - start;
+      res.json({ host, latency, status: "success", code: response.status });
+    } catch (error) {
+       res.json({ host, latency: Date.now() - start, status: "error", message: "Host unreachable or HTTP restricted" });
+    }
+  });
+
+  // Simulated Traceroute
+  app.get("/api/traceroute/:host", async (req, res) => {
+    const { host } = req.params;
+    // Real traceroute is often blocked in serverless/container envs.
+    // We simulate a realistic hop sequence for the demo/utility feel.
+    const hops = [
+      { hop: 1, ip: "192.168.1.1", ms: (Math.random() * 5).toFixed(2), city: "Local Gateway" },
+      { hop: 2, ip: "10.0.0.1", ms: (Math.random() * 10 + 5).toFixed(2), city: "ISP Backbone" },
+      { hop: 3, ip: "172.67.12.1", ms: (Math.random() * 15 + 10).toFixed(2), city: "Cloudflare Edge" },
+    ];
+
+    try {
+      const targetRes = await fetch(`http://ip-api.com/json/${host}?fields=status,query,city,isp`);
+      const targetData = await targetRes.json();
+      if (targetData.status === "success") {
+        hops.push({
+          hop: 4,
+          ip: targetData.query,
+          ms: (Math.random() * 30 + 20).toFixed(2),
+          city: targetData.city + " (" + targetData.isp + ")"
+        });
+      }
+    } catch (e) {
+      hops.push({ hop: 4, ip: host, ms: "??", city: "Destino Remoto" });
+    }
+
+    res.json({ host, hops });
+  });
+
+  // Vite integration
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer();
