@@ -22,6 +22,8 @@ import {
   X
 } from 'lucide-react';
 import axios from 'axios';
+import { GoogleGenAI } from "@google/genai";
+import { QRCodeSVG } from 'qrcode.react';
 import { useIPInspector } from './hooks/useIPInspector';
 import { cn } from './lib/utils';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -42,6 +44,7 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 export default function App() {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   const { ipData, systemData, loading, error } = useIPInspector();
   const [activeTab, setActiveTab] = useState('meu-ip');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -130,38 +133,65 @@ export default function App() {
   const handleLookingGlass = async () => {
     if (!lgTarget) return;
     setIsLgRunning(true);
-    setLgOutput(`iTmanage Looking Glass v1.0.2\nConnecting to node ${lgRouter}...\n\n`);
+    setLgOutput(`iTmanage Looking Glass v1.1.0\nConnecting to PoP Node: ${lgRouter} (iTmanage Backbone)...\n\n`);
     
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 600));
 
     if (lgCommand === 'ping') {
-      setLgOutput(prev => prev + `PING ${lgTarget} (icmp_seq=1):\n`);
-      for (let i = 1; i <= 4; i++) {
-        await new Promise(r => setTimeout(r, 600));
-        const rtt = (20 + Math.random() * 5).toFixed(3);
-        setLgOutput(prev => prev + `64 bytes from ${lgTarget}: icmp_seq=${i} ttl=64 time=${rtt} ms\n`);
+      try {
+        const res = await axios.get(`/api/ping/${lgTarget}`);
+        const { latency, status, code } = res.data;
+        
+        setLgOutput(prev => prev + `PING ${lgTarget} via ${lgRouter}:\n`);
+        if (status === 'success') {
+          for (let i = 1; i <= 4; i++) {
+            await new Promise(r => setTimeout(r, 400));
+            const rtt = (latency + (Math.random() * 2 - 1)).toFixed(3);
+            setLgOutput(prev => prev + `64 bytes from ${lgTarget}: icmp_seq=${i} ttl=58 time=${rtt} ms\n`);
+          }
+          setLgOutput(prev => prev + `\n--- ${lgTarget} ping stats ---\n4 packets transmitted, 4 received, 0% loss, rtt avg ${latency.toFixed(3)} ms\n`);
+        } else {
+          setLgOutput(prev => prev + `Error: Host unreachable or filtered (HTTP ${code || 'Timeout'}).\n`);
+        }
+      } catch (e) {
+        setLgOutput(prev => prev + `CRITICAL: Connection to ${lgRouter} failed.\n`);
       }
-      setLgOutput(prev => prev + `\n--- ${lgTarget} ping statistics ---\n4 packets transmitted, 4 packets received, 0.0% packet loss\n`);
     } else if (lgCommand === 'traceroute') {
-      setLgOutput(prev => prev + `traceroute to ${lgTarget}, 30 hops max, 60 byte packets\n`);
-      for (let i = 1; i <= 5; i++) {
-        await new Promise(r => setTimeout(r, 500));
-        const rtt = (i * 2 + Math.random()).toFixed(3);
-        setLgOutput(prev => prev + ` ${i}  10.244.${i}.1  ${rtt} ms  ${rtt} ms  ${rtt} ms\n`);
+      try {
+        const res = await axios.get(`/api/traceroute/${lgTarget}`);
+        setLgOutput(prev => prev + `traceroute to ${lgTarget}, 30 hops max, 60 byte packets\n`);
+        for (const h of res.data.hops) {
+          await new Promise(r => setTimeout(r, 300));
+          setLgOutput(prev => prev + ` ${h.hop}  ${h.ip}  ${h.ms} ms  ${h.city}\n`);
+        }
+      } catch (e) {
+        setLgOutput(prev => prev + `Error tracing path to destination.\n`);
       }
-      setLgOutput(prev => prev + ` 6  ${lgTarget}  ${(15 + Math.random()).toFixed(3)} ms\n`);
     } else {
-      // BGP Route
-      setLgOutput(prev => prev + `BGP routing table entry for ${lgTarget}/32\n`);
-      await new Promise(r => setTimeout(r, 1000));
-      setLgOutput(prev => prev + `Paths: (1 available, best #1)
-  Advertised to non peer-groups:
-    iTmanage-Global-Transit
-  65000 27699
-    ${lgTarget} from 172.16.0.1 (172.16.0.1)
-      Origin IGP, metric 0, localpref 100, valid, internal, best
-      Community: 27699:1000 27699:1101
-      Last update: Thu Apr 16 11:42:04 2026\n`);
+      // BGP Route - Using Gemini for realism
+      setLgOutput(prev => prev + `BGP table lookup for ${lgTarget}...\n`);
+      try {
+        const prompt = `Gere uma entrada técnica de tabela de roteamento BGP (estilo roteador Cisco ou Juniper) para o IP ou prefixo "${lgTarget}" consultado a partir do roteador de borda em "${lgRouter}". 
+        Inclua informações reais ou realistas como:
+        - BGP routing table entry
+        - Paths (as-path)
+        - Communities
+        - Local Preference
+        - Next Hop
+        - Origin
+        - Last update
+        Deve parecer uma saída de terminal real de um terminal "Looking Glass". Não inclua markdown, apenas texto puro de terminal.`;
+
+        const response = await ai.models.generateContent({
+          model: "gemini-3.1-flash-lite-preview",
+          contents: prompt,
+        });
+        
+        setLgOutput(prev => prev + (response.text || "BGP Entry not available."));
+      } catch (e) {
+        // Fallback simulation if Gemini fails
+        setLgOutput(prev => prev + `BGP routing table entry for ${lgTarget}/24\nPaths: (1 available, best #1)\n  27699 65000 15169\n    ${lgTarget} from 172.16.0.1\n      Origin IGP, localpref 100, valid, internal, best\n      Community: 27699:1000\n`);
+      }
     }
     setIsLgRunning(false);
   };
@@ -223,15 +253,18 @@ export default function App() {
   return (
     <div className="min-h-screen bg-bg-dark text-white font-sans selection:bg-brand-accent/30">
       {/* Navigation Header */}
-              <header className="sticky top-0 z-50 border-b border-border-dim bg-bg-dark/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-border-dim bg-bg-dark/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="p-1.5 md:p-2 bg-brand-accent/10 rounded-lg md:rounded-xl border border-brand-accent/20">
-              <Box className="w-4 h-4 md:w-5 md:h-5 text-brand-accent" />
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="p-1.5 md:p-2 bg-brand-accent/10 rounded-lg md:rounded-xl border border-brand-accent/20">
+                <Box className="w-4 h-4 md:w-5 md:h-5 text-brand-accent" />
+              </div>
+              <span className="text-[18px] md:text-[22px] font-extrabold tracking-tighter text-white italic leading-none">
+                iT<span className="text-brand-accent not-italic">manage</span>
+              </span>
             </div>
-            <span className="text-[18px] md:text-[22px] font-extrabold tracking-tighter text-white italic leading-none">
-              iT<span className="text-brand-accent not-italic">manage</span>
-            </span>
+            <span className="text-[9px] md:text-[10px] text-text-dim/60 font-mono tracking-wider ml-1">meuip.itmanage.com.br</span>
           </div>
 
           <div className="hidden lg:flex items-center gap-2 bg-bg-dark/40 p-1 rounded-2xl border border-border-dim/50">
@@ -331,25 +364,42 @@ export default function App() {
                     Endereços de Rede Ativos
                   </div>
                   
-                  <div className="space-y-6 md:space-y-10">
-                    <div className="relative">
-                      <div className="text-[11px] md:text-[12px] text-text-dim mb-2 flex items-center gap-2">
-                        <Shield className="w-3 h-3" /> Protocolo IPv4 (Principal)
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-8">
+                    <div className="space-y-6 md:space-y-10 flex-grow">
+                      <div className="relative">
+                        <div className="text-[11px] md:text-[12px] text-text-dim mb-2 flex items-center gap-2">
+                          <Shield className="w-3 h-3" /> Protocolo IPv4 (Principal)
+                        </div>
+                        <div className="font-mono text-[28px] sm:text-[34px] md:text-[42px] text-brand-accent glow-text font-black leading-none tracking-tighter break-all">
+                          {ipData?.ip || 'Detectando...'}
+                        </div>
                       </div>
-                      <div className="font-mono text-[28px] sm:text-[34px] md:text-[42px] text-brand-accent glow-text font-black leading-none tracking-tighter break-all">
-                        {ipData?.ip || 'Detectando...'}
+                      
+                      <div className="p-4 bg-bg-dark/40 border-l-2 border-border-dim rounded-r-xl">
+                        <div className="text-[11px] md:text-[12px] text-text-dim mb-2">Protocolo IPv6 (Secundário)</div>
+                        <div className={cn(
+                          "font-mono text-[11px] sm:text-[13px] break-all leading-relaxed italic font-bold",
+                          ipData?.ipv6 ? "text-text-dim/80" : "text-red-500"
+                        )}>
+                          {ipData?.ipv6 ? ipData.ipv6 : 'Sem endereço IPv6'}
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="p-4 bg-bg-dark/40 border-l-2 border-border-dim rounded-r-xl">
-                      <div className="text-[11px] md:text-[12px] text-text-dim mb-2">Protocolo IPv6 (Secundário)</div>
-                      <div className={cn(
-                        "font-mono text-[11px] sm:text-[13px] break-all leading-relaxed italic font-bold",
-                        ipData?.ipv6 ? "text-text-dim/80" : "text-red-500"
-                      )}>
-                        {ipData?.ipv6 ? ipData.ipv6 : 'Sem endereço IPv6'}
+
+                    {ipData?.ip && (
+                      <div className="hidden sm:flex shrink-0 p-4 bg-white/5 border border-white/5 rounded-2xl flex-col items-center gap-3 self-center sm:self-start group-hover:border-brand-accent/20 transition-all">
+                        <div className="p-2 bg-white rounded-lg">
+                          <QRCodeSVG 
+                            value={ipData.ip} 
+                            size={120} 
+                            level="H" 
+                            fgColor="#000000"
+                            bgColor="#FFFFFF"
+                          />
+                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-text-dim group-hover:text-brand-accent transition-colors">IP Credentials QR</span>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   <div className="mt-auto pt-10">
@@ -418,7 +468,7 @@ export default function App() {
                       </div>
                       <div>
                         <div className="text-[12px] text-text-dim mb-1">Número ASN</div>
-                        <div className="text-[14px] font-mono text-brand-accent">{ipData?.asn || 'AS27699'}</div>
+                        <div className="text-[14px] font-mono text-brand-accent font-bold italic">{ipData?.asn || 'AS27699'}</div>
                       </div>
                       <div>
                         <div className="text-[12px] text-text-dim mb-1">Região de Acesso</div>
@@ -428,8 +478,9 @@ export default function App() {
                   </div>
                   
                   <motion.div 
-                    whileHover={{ scale: 1.01 }}
-                    className="flex-grow min-h-[220px] bg-bg-dark relative transition-shadow hover:shadow-2xl hover:shadow-brand-accent/10 cursor-crosshair overflow-hidden rounded-xl"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="h-[220px] bg-bg-dark relative overflow-hidden group"
                   >
                     {ipData && ipData.latitude && ipData.longitude ? (
                       <MapContainer 
@@ -438,25 +489,19 @@ export default function App() {
                         style={{ height: '100%', width: '100%' }}
                         zoomControl={false}
                         className="z-0"
+                        key={`monitor-${ipData.latitude}-${ipData.longitude}`}
                       >
                         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        <Marker position={[ipData.latitude, ipData.longitude]}>
-                          <Popup minWidth={240}>
-                            <div className="bg-bg-dark border border-white/10 p-3 rounded-lg text-white">
-                               <p className="text-[10px] font-black uppercase text-brand-accent mb-2">Sua Geolocalização</p>
-                               <p className="text-xs font-bold">{ipData.city}, {ipData.region}</p>
-                               <p className="text-[10px] text-text-dim mt-1">{ipData.ip}</p>
-                            </div>
-                          </Popup>
-                        </Marker>
+                        <Marker position={[ipData.latitude, ipData.longitude]} />
                       </MapContainer>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-text-dim italic text-sm">
+                      <div className="w-full h-full flex items-center justify-center text-text-dim italic text-[10px] uppercase tracking-widest">
                         Mapa indisponível
                       </div>
                     )}
-                    <div className="absolute top-4 right-4 z-10 w-3 h-3 bg-brand-accent rounded-full animate-ping opacity-75" />
-                    <div className="absolute top-4 right-4 z-10 w-3 h-3 bg-brand-accent rounded-full" />
+                    <div className="absolute bottom-3 left-3 z-10 p-2 bg-bg-dark/80 backdrop-blur-sm rounded-lg text-[9px] text-text-dim border border-white/5">
+                      LAT: {ipData?.latitude} | LON: {ipData?.longitude}
+                    </div>
                   </motion.div>
                   
                   <div className="p-4 bg-bg-dark/50 text-[10px] text-text-dim leading-relaxed border-t border-border-dim">

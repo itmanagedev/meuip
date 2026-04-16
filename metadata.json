@@ -1,6 +1,6 @@
 {
-  "name": "iTmanage Meu IP",
-  "description": "Uma aplicação profissional para visualização de IP, geolocalização e informações do sistema, desenvolvida para iTmanage.",
+  "name": "iTmanage - Monitor de IP",
+  "description": "Ferramenta profissional e avançada para auditoria de rede, monitoramento de IP e diagnóstico de latência iTmanage.",
   "requestFramePermissions": [
     "geolocation"
   ],
