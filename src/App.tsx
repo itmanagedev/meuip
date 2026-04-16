@@ -51,6 +51,62 @@ export default function App() {
   const [downloadSpeed, setDownloadSpeed] = useState<number | null>(null);
   const [isTestRunning, setIsTestRunning] = useState(false);
 
+  // IP Validator State
+  const [targetIP, setTargetIP] = useState('');
+  const [validatorData, setValidatorData] = useState<any>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [isScanningPorts, setIsScanningPorts] = useState(false);
+  const [portResults, setPortResults] = useState<any[]>([]);
+
+  const handleAnalyzeIP = async () => {
+    if (!targetIP) return;
+    
+    // Simple validation for IP or domain
+    const ipPattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+    const domainPattern = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/;
+    
+    if (!ipPattern.test(targetIP) && !domainPattern.test(targetIP)) {
+      setValidatorData({ status: 'fail', message: 'Formato de IP ou Domínio inválido.' });
+      return;
+    }
+
+    setIsValidating(true);
+    try {
+      const res = await axios.get(`/api/inspect-ip/${targetIP}`);
+      setValidatorData(res.data);
+      // Reset port results when a new IP is analyzed
+      setPortResults([]);
+    } catch (e) {
+      console.error('Erro ao validar IP', e);
+      setValidatorData({ status: 'fail', message: 'Falha na conexão com o serviço de validação.' });
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const handleResetValidator = () => {
+    setTargetIP('');
+    setValidatorData(null);
+    setPortResults([]);
+  };
+
+  const handleScanPorts = async () => {
+    if (!targetIP) return;
+    setIsScanningPorts(true);
+    try {
+      const commonPorts = [80, 443, 21, 22, 3389, 8080, 53, 25];
+      const res = await axios.post('/api/scan-ports', {
+        host: targetIP,
+        ports: commonPorts
+      });
+      setPortResults(res.data.results);
+    } catch (e) {
+      console.error('Erro ao escanear portas', e);
+    } finally {
+      setIsScanningPorts(false);
+    }
+  };
+
   const tabs = [
     { id: 'meu-ip', label: 'Monitor de IP', icon: Monitor },
     { id: 'validador', label: 'Validador', icon: Shield },
@@ -462,104 +518,175 @@ export default function App() {
                 className="grid grid-cols-1 lg:grid-cols-12 gap-5"
               >
                 <div className="lg:col-span-5 bg-card-bg border border-border-dim rounded-xl p-6 space-y-6">
-                  <div className="text-[11px] text-text-dim uppercase tracking-wider flex items-center gap-2">
-                    <Shield className="w-3 h-3" /> Validar Novo IP
+                  <div className="text-[11px] text-text-dim uppercase tracking-wider flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                       <Shield className="w-3 h-3" /> Validar Novo IP / Host
+                    </span>
+                    {targetIP && (
+                      <button 
+                        onClick={handleResetValidator}
+                        className="text-[9px] font-bold text-brand-accent hover:underline flex items-center gap-1"
+                      >
+                        <X className="w-2.5 h-2.5" /> LIMPAR
+                      </button>
+                    )}
                   </div>
                   <div className="space-y-4">
                     <div className="relative">
                       <input 
-                        id="target-ip"
+                        value={targetIP}
+                        onChange={(e) => setTargetIP(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleAnalyzeIP();
+                        }}
                         type="text" 
-                        placeholder="Ex: 8.8.8.8"
+                        placeholder="Ex: 8.8.8.8 ou google.com"
                         className="w-full bg-bg-dark border border-border-dim rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-accent transition-colors"
                       />
                     </div>
                     <button 
-                      onClick={async () => {
-                        const input = document.getElementById('target-ip') as HTMLInputElement;
-                        const ip = input.value;
-                        if(!ip) return;
-                        try {
-                          const res = await axios.get(`/api/inspect-ip/${ip}`);
-                          (window as any)._validatedData = res.data;
-                          setActiveTab('validador-result');
-                        } catch(e) {
-                          alert('Erro ao validar IP');
-                        }
-                      }}
-                      className="w-full py-3 bg-brand-accent text-white font-bold rounded-lg text-xs uppercase tracking-widest hover:brightness-110"
+                      disabled={isValidating || !targetIP}
+                      onClick={handleAnalyzeIP}
+                      className="w-full py-3 bg-brand-accent text-white font-bold rounded-lg text-xs uppercase tracking-widest hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                      Analisar Endereço
+                      {isValidating ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Globe className="w-4 h-4" />
+                      )}
+                      {isValidating ? 'Analisando...' : 'Analisar Endereço'}
                     </button>
                   </div>
+
+                  {validatorData && validatorData.status === 'success' && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-4 pt-4 border-t border-border-dim/50"
+                    >
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 bg-bg-dark/40 rounded-lg border border-border-dim/30">
+                          <div className="text-[10px] text-text-dim uppercase mb-1">País</div>
+                          <div className="text-sm font-bold truncate">{validatorData.country}</div>
+                        </div>
+                        <div className="p-3 bg-bg-dark/40 rounded-lg border border-border-dim/30">
+                          <div className="text-[10px] text-text-dim uppercase mb-1">Cidade</div>
+                          <div className="text-sm font-bold truncate">{validatorData.city}</div>
+                        </div>
+                        <div className="p-3 bg-bg-dark/40 rounded-lg border border-border-dim/30">
+                          <div className="text-[10px] text-text-dim uppercase mb-1">ISP</div>
+                          <div className="text-sm font-bold truncate">{validatorData.isp}</div>
+                        </div>
+                        <div className="p-3 bg-bg-dark/40 rounded-lg border border-border-dim/30">
+                          <div className="text-[10px] text-text-dim uppercase mb-1">Fuso Horário</div>
+                          <div className="text-sm font-bold truncate">{validatorData.timezone}</div>
+                        </div>
+                      </div>
+                      <div className="p-3 bg-bg-dark/40 rounded-lg border border-border-dim/30">
+                        <div className="text-[10px] text-text-dim uppercase mb-1">ASN / Organização</div>
+                        <div className="text-sm font-bold truncate italic text-brand-accent">{validatorData.as}</div>
+                      </div>
+
+                      {validatorData.lat && validatorData.lon && (
+                        <div className="h-[180px] w-full rounded-xl overflow-hidden border border-border-dim/50 shadow-inner group/map">
+                          <MapContainer 
+                            center={[validatorData.lat, validatorData.lon]} 
+                            zoom={10} 
+                            style={{ height: '100%', width: '100%' }}
+                            zoomControl={false}
+                            key={`${validatorData.lat}-${validatorData.lon}`}
+                          >
+                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                            <Marker position={[validatorData.lat, validatorData.lon]}>
+                              <Popup>
+                                <div className="text-xs font-bold">{validatorData.city}, {validatorData.country}</div>
+                              </Popup>
+                            </Marker>
+                          </MapContainer>
+                          <div className="absolute inset-0 pointer-events-none border-2 border-brand-accent/0 group-hover/map:border-brand-accent/20 transition-all rounded-xl" />
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {validatorData && validatorData.status === 'fail' && (
+                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-500">
+                      <strong>ERRO:</strong> {validatorData.message || 'Endereço inválido ou não encontrado.'}
+                    </div>
+                  )}
+
                   <div className="p-4 bg-brand-accent/5 border border-brand-accent/10 rounded-lg text-xs text-text-dim leading-relaxed">
-                    <span className="text-brand-accent font-bold">INFO:</span> A análise inclui geolocalização, ASN, detecção de VPN/Proxy e verificação de ASN.
+                    <span className="text-brand-accent font-bold">INFO:</span> A análise inclui geolocalização, ASN e identificação de infraestrutura.
                   </div>
                 </div>
                 
-                <div className="lg:col-span-7 bg-card-bg border border-border-dim rounded-xl p-6">
-                  <div className="text-[11px] text-text-dim uppercase tracking-wider mb-6">Portas Comuns (Scan Rápido)</div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {[80, 443, 21, 22, 3389, 8080, 53, 25].map(port => (
-                      <div key={port} className="p-3 bg-bg-dark/50 border border-border-dim rounded-lg text-center">
-                        <div className="text-[10px] text-text-dim mb-1">PORTA</div>
-                        <div className="font-mono text-sm font-bold">{port}</div>
-                      </div>
-                    ))}
+                <div className="lg:col-span-7 bg-card-bg border border-border-dim rounded-xl p-6 flex flex-col">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="text-[11px] text-text-dim uppercase tracking-wider">Portas Comuns (Scan em Tempo Real)</div>
+                    <button
+                      disabled={isScanningPorts || !targetIP || (validatorData?.status === 'fail')}
+                      onClick={handleScanPorts}
+                      className="px-4 py-2 bg-bg-dark border border-border-dim text-[10px] font-black uppercase tracking-widest rounded-lg hover:border-brand-accent hover:text-brand-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {isScanningPorts ? (
+                        <div className="w-3 h-3 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Activity className="w-3 h-3" />
+                      )}
+                      {isScanningPorts ? 'Escaneando...' : 'Iniciar Scan'}
+                    </button>
                   </div>
-                  <div className="mt-8 text-center">
-                    <p className="text-xs text-text-dim italic">Insira um IP ao lado para iniciar o teste de portas.</p>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[80, 443, 21, 22, 3389, 8080, 53, 25].map(port => {
+                      const result = portResults.find(r => r.port === port);
+                      return (
+                        <div key={port} className={cn(
+                          "p-4 border rounded-xl text-center transition-all relative overflow-hidden group",
+                          !result ? "bg-bg-dark/20 border-border-dim/30" :
+                          result.status === 'open' ? "bg-brand-success/10 border-brand-success/30 shadow-[0_0_15px_rgba(48,164,108,0.1)]" :
+                          result.status === 'timeout' ? "bg-orange-500/10 border-orange-500/30" :
+                          "bg-red-500/10 border-red-500/30"
+                        )}>
+                          <div className="text-[9px] text-text-dim mb-1 font-bold group-hover:text-white transition-colors">TCP {port}</div>
+                          <div className="font-mono text-lg font-black">{port}</div>
+                          {result && (
+                            <div className={cn(
+                              "text-[9px] font-black uppercase mt-2 tracking-widest",
+                              result.status === 'open' ? "text-brand-success" :
+                              result.status === 'timeout' ? "text-orange-500" :
+                              "text-red-500"
+                            )}>
+                              {result.status}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="mt-auto pt-8 border-t border-border-dim/50 mt-8">
+                    <div className="bg-bg-dark/40 p-5 rounded-2xl flex items-start gap-4">
+                      <div className="p-3 bg-brand-accent/10 rounded-xl">
+                        <Monitor className="w-5 h-5 text-brand-accent" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-white mb-1 uppercase tracking-wider">Como funciona o scanner?</h4>
+                        <p className="text-[10px] text-text-dim leading-relaxed">
+                          O scanner tenta estabelecer uma conexão TCP com as portas listadas no host alvo a partir do nosso servidor iTmanage. 
+                          Se o host responder, a porta é marcada como <span className="text-brand-success font-bold">OPEN</span>. 
+                          Caso contrário, pode estar <span className="text-red-500 font-bold">CLOSED</span> ou protegida por um <span className="text-orange-500 font-bold">FIREWALL</span> (Timeout).
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
             )}
 
+            {/* Remove validador-result since we integrated it */}
             {activeTab === 'validador-result' && (
-              <motion.div
-                key="val-res"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-card-bg border border-brand-accent/20 rounded-xl p-8 max-w-4xl mx-auto"
-              >
-                <div className="flex justify-between items-start mb-8">
-                  <div className="space-y-1">
-                    <h2 className="text-2xl font-bold text-brand-accent">Resultado da Análise</h2>
-                    <p className="text-text-dim font-mono">{ (window as any)._validatedData?.query }</p>
-                  </div>
-                  <button onClick={() => setActiveTab('validador')} className="text-xs text-brand-accent hover:underline">Voltar</button>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
-                  <div className="space-y-4">
-                    <div className="flex justify-between pb-2 border-b border-border-dim">
-                      <span className="text-text-dim">País:</span>
-                      <span className="font-medium">{(window as any)._validatedData?.country}</span>
-                    </div>
-                    <div className="flex justify-between pb-2 border-b border-border-dim">
-                      <span className="text-text-dim">Cidade:</span>
-                      <span className="font-medium">{(window as any)._validatedData?.city}</span>
-                    </div>
-                    <div className="flex justify-between pb-2 border-b border-border-dim">
-                      <span className="text-text-dim">ISP:</span>
-                      <span className="font-medium">{(window as any)._validatedData?.isp}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex justify-between pb-2 border-b border-border-dim">
-                      <span className="text-text-dim">ASN:</span>
-                      <span className="font-medium">{(window as any)._validatedData?.as}</span>
-                    </div>
-                    <div className="flex justify-between pb-2 border-b border-border-dim">
-                      <span className="text-text-dim">Timezone:</span>
-                      <span className="font-medium">{(window as any)._validatedData?.timezone}</span>
-                    </div>
-                    <div className="flex justify-between pb-2 border-b border-border-dim">
-                      <span className="text-text-dim">Status:</span>
-                      <span className="text-brand-success font-bold">Ativo</span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+              <div className="hidden" />
             )}
 
             {activeTab === 'ping' && (
