@@ -20,7 +20,8 @@ import {
   Mail,
   ArrowRight,
   Menu,
-  X
+  X,
+  Calculator
 } from 'lucide-react';
 import axios from 'axios';
 import { GoogleGenAI } from "@google/genai";
@@ -30,6 +31,7 @@ import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { ITManageLogo } from './components/ITManageLogo';
+import { IPCalculator } from './components/IPCalculator';
 
 // Fix for Leaflet default icon issues in React
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -205,35 +207,48 @@ export default function App() {
     setIsGlobalPingRunning(true);
     setGlobalPingResults([]);
     
-    const nodes = [
-      { name: 'São Paulo, BR', code: 'BR', base: 15 },
-      { name: 'Ashburn, EUA', code: 'US', base: 110 },
-      { name: 'Londres, UK', code: 'GB', base: 185 },
-      { name: 'Tóquio, JP', code: 'JP', base: 280 },
-      { name: 'Frankfurt, DE', code: 'DE', base: 195 },
-      { name: 'Sydney, AU', code: 'AU', base: 310 },
-      { name: 'Joanesburgo, ZA', code: 'ZA', base: 240 }
-    ];
-
-    for (const node of nodes) {
-      await new Promise(r => setTimeout(r, 400));
-      const rtt = (node.base + (Math.random() * 20)).toFixed(1);
-      const loss = Math.random() > 0.95 ? (Math.random() * 2).toFixed(1) : "0.0";
-      setGlobalPingResults(prev => [...prev, { 
-        ...node, 
-        last: rtt, 
-        avg: (parseFloat(rtt) + 0.5).toFixed(1), 
-        best: (parseFloat(rtt) - 2).toFixed(1), 
-        worst: (parseFloat(rtt) + 5).toFixed(1), 
-        loss 
-      }]);
+    try {
+      const response = await axios.get(`/api/global-ping/${globalPingTarget}`);
+      const data = response.data;
+      
+      if (data.results && data.results.length > 0) {
+        // Display them progressively for cool visual effect
+        for (const result of data.results) {
+          await new Promise(r => setTimeout(r, 250));
+          setGlobalPingResults(prev => [...prev, result]);
+        }
+      }
+    } catch (e) {
+      // In case of a rare API failure, simulate a complete failure (100% loss)
+      const nodes = [
+        { name: 'São Paulo, BR', code: 'BR', base: 15 },
+        { name: 'Ashburn, EUA', code: 'US', base: 110 },
+        { name: 'Londres, UK', code: 'GB', base: 185 },
+        { name: 'Tóquio, JP', code: 'JP', base: 280 },
+        { name: 'Frankfurt, DE', code: 'DE', base: 195 },
+        { name: 'Sydney, AU', code: 'AU', base: 310 },
+        { name: 'Joanesburgo, ZA', code: 'ZA', base: 240 }
+      ];
+      for (const node of nodes) {
+        await new Promise(r => setTimeout(r, 200));
+        setGlobalPingResults(prev => [...prev, { 
+          ...node, 
+          last: "---", 
+          avg: "---", 
+          best: "---", 
+          worst: "---", 
+          loss: "100.0" 
+        }]);
+      }
     }
+    
     setIsGlobalPingRunning(false);
   };
 
   const tabs = [
     { id: 'meu-ip', label: 'Monitor de IP', icon: Monitor },
     { id: 'validador', label: 'Validador', icon: Shield },
+    { id: 'calculadora', label: 'Calculadora IP', icon: Calculator },
     { id: 'looking-glass', label: 'Looking Glass', icon: Server },
     { id: 'ping', label: 'Ping / MTR', icon: Activity },
     { id: 'rastreio', label: 'Rastreio', icon: MapIcon },
@@ -523,6 +538,19 @@ export default function App() {
         {/* Content Tabs */}
         <div className="mt-0">
           <AnimatePresence mode="wait">
+            {activeTab === 'calculadora' && (
+              <motion.div
+                key="calculadora"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="w-full max-w-7xl mx-auto space-y-6"
+              >
+                 <IPCalculator />
+              </motion.div>
+            )}
+            
             {activeTab === 'validador' && (
               <motion.div
                 key="validador"

@@ -100,17 +100,66 @@ async function startServer() {
     res.json({ host, results });
   });
 
-  // Simulated Ping
-  app.get("/api/ping/:host", async (req, res) => {
+  // Real ICMP Ping and Simulated Global Nodes
+  app.get("/api/global-ping/:host", async (req, res) => {
     const { host } = req.params;
-    const start = Date.now();
-    try {
-      const response = await fetch(`http://${host}`, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
-      const latency = Date.now() - start;
-      res.json({ host, latency, status: "success", code: response.status });
-    } catch (error) {
-       res.json({ host, latency: Date.now() - start, status: "error", message: "Host unreachable or HTTP restricted" });
+    
+    // Ensure host is a safe string before passing to shell
+    if (!/^[a-zA-Z0-9.-]+$/.test(host)) {
+      return res.status(400).json({ error: "Invalid host format" });
     }
+
+    const { exec } = await import("child_process");
+    
+    exec(`ping -c 4 -W 2 ${host}`, (error, stdout, stderr) => {
+      // Analyze the ping output to determine reachability and loss
+      const isAlive = !error;
+      const lossMatch = stdout.match(/(\d+)% packet loss/);
+      let lossPercent = lossMatch ? lossMatch[1] : (isAlive ? "0" : "100");
+
+      if (error && !stdout.includes("packet loss")) {
+         lossPercent = "100";
+      }
+
+      // If practically dead, simulate 100% loss for all global nodes
+      const isDead = parseInt(lossPercent) >= 100;
+      
+      const nodes = [
+        { name: 'São Paulo, BR', code: 'BR', base: 15 },
+        { name: 'Ashburn, EUA', code: 'US', base: 110 },
+        { name: 'Londres, UK', code: 'GB', base: 185 },
+        { name: 'Tóquio, JP', code: 'JP', base: 280 },
+        { name: 'Frankfurt, DE', code: 'DE', base: 195 },
+        { name: 'Sydney, AU', code: 'AU', base: 310 },
+        { name: 'Joanesburgo, ZA', code: 'ZA', base: 240 }
+      ];
+
+      const results = nodes.map(node => {
+        if (isDead) {
+          return {
+            ...node,
+            last: "---",
+            avg: "---",
+            best: "---",
+            worst: "---",
+            loss: "100.0"
+          };
+        } else {
+          // Add some jitter for realism if reachable
+          const rtt = (node.base + (Math.random() * 20)).toFixed(1);
+          return {
+            ...node,
+            last: rtt,
+            avg: (parseFloat(rtt) + 0.5).toFixed(1),
+            best: (parseFloat(rtt) - 2).toFixed(1),
+            worst: (parseFloat(rtt) + 5).toFixed(1),
+            loss: "0.0"
+          };
+        }
+      });
+
+      res.json({ host, results, isDead });
+    });
   });
 
   // Simulated Traceroute
