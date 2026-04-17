@@ -11,8 +11,7 @@ import {
   Cpu, 
   Wifi, 
   Map as MapIcon, 
-  Activity, 
-  Box, 
+  Activity,
   Monitor,
   Info,
   Server,
@@ -27,9 +26,10 @@ import axios from 'axios';
 import { GoogleGenAI } from "@google/genai";
 import { useIPInspector } from './hooks/useIPInspector';
 import { cn } from './lib/utils';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { ITManageLogo } from './components/ITManageLogo';
 
 // Fix for Leaflet default icon issues in React
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -259,14 +259,7 @@ export default function App() {
       {/* Navigation Header */}
               <header className="sticky top-0 z-50 border-b border-border-dim bg-bg-dark/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="p-1.5 md:p-2 bg-brand-accent/10 rounded-lg md:rounded-xl border border-brand-accent/20">
-              <Box className="w-4 h-4 md:w-5 md:h-5 text-brand-accent" />
-            </div>
-            <span className="text-[18px] md:text-[22px] font-extrabold tracking-tighter text-white italic leading-none">
-              iT<span className="text-brand-accent not-italic">manage</span>
-            </span>
-          </div>
+          <ITManageLogo className="scale-75 md:scale-90 origin-left" />
 
           <div className="hidden lg:flex items-center gap-2 bg-bg-dark/40 p-1 rounded-2xl border border-border-dim/50">
             {tabs.map((tab) => {
@@ -480,7 +473,7 @@ export default function App() {
                         <div>
                           <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-widest">Número ASN</div>
                           <div className="text-[18px] font-black text-brand-accent tracking-widest flex items-center gap-2">
-                             {ipData?.asn || 'AS27699'}
+                             {ipData?.asn?.split(' ')[0] || 'AS27699'}
                              <div className="text-[8px] px-1.5 py-0.5 bg-brand-accent/10 border border-brand-accent/20 rounded-md">BGP</div>
                           </div>
                         </div>
@@ -502,14 +495,7 @@ export default function App() {
                              className="z-0"
                            >
                              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                             <Marker position={[ipData.latitude, ipData.longitude]}>
-                               <Popup minWidth={180}>
-                                 <div className="bg-bg-dark border border-white/10 p-2 rounded text-white">
-                                    <p className="text-[9px] font-black uppercase text-brand-accent mb-1">Localização Detectada</p>
-                                    <p className="text-[10px] font-bold">{ipData.city}, {ipData.region}</p>
-                                 </div>
-                               </Popup>
-                             </Marker>
+                             <Marker position={[ipData.latitude, ipData.longitude]} />
                            </MapContainer>
                            <div className="absolute top-4 right-4 z-[400] w-2.5 h-2.5 bg-brand-accent rounded-full animate-ping" />
                            <div className="absolute top-4 right-4 z-[400] w-2.5 h-2.5 bg-brand-accent rounded-full" />
