@@ -203,12 +203,13 @@ export default function App() {
   };
 
   const handleGlobalPing = async () => {
-    if (!globalPingTarget) return;
+    const cleanTarget = globalPingTarget.trim();
+    if (!cleanTarget) return;
     setIsGlobalPingRunning(true);
     setGlobalPingResults([]);
     
     try {
-      const response = await axios.get(`/api/global-ping/${globalPingTarget}`);
+      const response = await axios.get(`/api/global-ping/${cleanTarget}`);
       const data = response.data;
       
       if (data.results && data.results.length > 0) {
@@ -220,6 +221,8 @@ export default function App() {
       }
     } catch (e) {
       // In case of a rare API failure, simulate a complete failure (100% loss)
+      const isValidationError = e.response?.status === 400;
+      
       const nodes = [
         { name: 'São Paulo, BR', code: 'BR', base: 15 },
         { name: 'Ashburn, EUA', code: 'US', base: 110 },
@@ -233,12 +236,15 @@ export default function App() {
         await new Promise(r => setTimeout(r, 200));
         setGlobalPingResults(prev => [...prev, { 
           ...node, 
-          last: "---", 
-          avg: "---", 
-          best: "---", 
-          worst: "---", 
+          last: isValidationError ? "ERR" : "---", 
+          avg: isValidationError ? "ERR" : "---", 
+          best: isValidationError ? "ERR" : "---", 
+          worst: isValidationError ? "ERR" : "---", 
           loss: "100.0" 
         }]);
+      }
+      if (isValidationError) {
+          alert('Alvo com formato inválido. Evite caracteres especiais.');
       }
     }
     
@@ -1053,12 +1059,12 @@ export default function App() {
       {/* Footer */}
       <footer className="py-20 border-t border-border-dim text-center space-y-8 bg-black/20">
         <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4 text-[11px] uppercase tracking-[0.2em] font-black text-text-dim/60">
-          <a href="#" className="hover:text-brand-accent transition-all hover:tracking-[0.3em]">Suporte Técnico</a>
-          <a href="#" className="hover:text-brand-accent transition-all hover:tracking-[0.3em]">Termos de Uso</a>
-          <a href="#" className="hover:text-brand-accent transition-all hover:tracking-[0.3em]">Compliance</a>
-          <a href="/about" className="hover:text-brand-accent transition-all hover:tracking-[0.3em]">Sobre nós</a>
+          <a href="https://www.itmanage.com.br/#inicio" target="_blank" rel="noopener noreferrer" className="hover:text-brand-accent transition-all hover:tracking-[0.3em]">Início</a>
+          <a href="https://www.itmanage.com.br/#sobre" target="_blank" rel="noopener noreferrer" className="hover:text-brand-accent transition-all hover:tracking-[0.3em]">Sobre Nós</a>
+          <a href="https://www.itmanage.com.br/#servicos" target="_blank" rel="noopener noreferrer" className="hover:text-brand-accent transition-all hover:tracking-[0.3em]">Serviços</a>
+          <a href="https://www.itmanage.com.br/#porquenos" target="_blank" rel="noopener noreferrer" className="hover:text-brand-accent transition-all hover:tracking-[0.3em]">Por Que Escolher</a>
           <a 
-            href="https://itmanage.com.br" 
+            href="https://www.itmanage.com.br" 
             target="_blank" 
             rel="noopener noreferrer" 
             className="px-4 py-2 border border-brand-accent/30 rounded-full text-brand-accent hover:bg-brand-accent hover:text-white transition-all scale-105"

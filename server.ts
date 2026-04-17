@@ -104,8 +104,8 @@ async function startServer() {
   app.get("/api/global-ping/:host", async (req, res) => {
     const { host } = req.params;
     
-    // Ensure host is a safe string before passing to shell
-    if (!/^[a-zA-Z0-9.-]+$/.test(host)) {
+    // Ensure host is a safe string before passing to shell (allow IPv4, IPv6, and Domains)
+    if (!/^[a-zA-Z0-9.:-]+$/.test(host)) {
       return res.status(400).json({ error: "Invalid host format" });
     }
 
