@@ -45,7 +45,6 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 export default function App() {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   const { ipData, systemData, loading, error } = useIPInspector();
   const [activeTab, setActiveTab] = useState('meu-ip');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -172,6 +171,10 @@ export default function App() {
       // BGP Route - Using Gemini for realism
       setLgOutput(prev => prev + `BGP table lookup for ${lgTarget}...\n`);
       try {
+        const apiKey = typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY : '';
+        if (!apiKey) throw new Error('API key missing');
+        const ai = new GoogleGenAI({ apiKey });
+        
         const prompt = `Gere uma entrada técnica de tabela de roteamento BGP (estilo roteador Cisco ou Juniper) para o IP ou prefixo "${lgTarget}" consultado a partir do roteador de borda em "${lgRouter}". 
         Inclua informações reais ou realistas como:
         - BGP routing table entry
