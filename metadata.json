@@ -1,5 +1,5 @@
 {
-  "name": "iTmanage Meu IP",
+  "name": "iTmanage Tool",
   "description": "Uma aplicação profissional para visualização de IP, geolocalização e informações do sistema, desenvolvida para iTmanage.",
   "requestFramePermissions": [
     "geolocation"

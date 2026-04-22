@@ -21,13 +21,15 @@ import {
   ArrowRight,
   Menu,
   X,
-  Calculator
+  Calculator,
+  Moon,
+  Sun
 } from 'lucide-react';
 import axios from 'axios';
 import { GoogleGenAI } from "@google/genai";
 import { useIPInspector } from './hooks/useIPInspector';
 import { cn } from './lib/utils';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { ITManageLogo } from './components/ITManageLogo';
@@ -50,6 +52,20 @@ export default function App() {
   const { ipData, systemData, loading, error } = useIPInspector();
   const [activeTab, setActiveTab] = useState('meu-ip');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  React.useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.add('light');
+    }
+  }, [isDarkMode]);
+  
+  // Traceroute mapping state
+  const [traceTargetInput, setTraceTargetInput] = useState('');
+  const [traceHops, setTraceHops] = useState<any[]>([]);
+  const [isTracing, setIsTracing] = useState(false);
   
   // Real Client-Side Stats
   const [clientPing, setClientPing] = useState<number | null>(null);
@@ -202,6 +218,20 @@ export default function App() {
     setIsLgRunning(false);
   };
 
+  const handleTraceroute = async () => {
+    if (!traceTargetInput) return;
+    setIsTracing(true);
+    setTraceHops([]);
+    try {
+      const res = await axios.get(`/api/traceroute/${traceTargetInput}`);
+      setTraceHops(res.data.hops);
+    } catch (e) {
+      console.error('Trace error', e);
+    } finally {
+      setIsTracing(false);
+    }
+  };
+
   const handleGlobalPing = async () => {
     const cleanTarget = globalPingTarget.trim();
     if (!cleanTarget) return;
@@ -252,7 +282,7 @@ export default function App() {
   };
 
   const tabs = [
-    { id: 'meu-ip', label: 'Monitor de IP', icon: Monitor },
+    { id: 'meu-ip', label: 'Tool', icon: Monitor },
     { id: 'validador', label: 'Validador', icon: Shield },
     { id: 'calculadora', label: 'Calculadora IP', icon: Calculator },
     { id: 'looking-glass', label: 'Looking Glass', icon: Server },
@@ -276,7 +306,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-dark text-white font-sans selection:bg-brand-accent/30">
+    <div className="min-h-screen bg-bg-dark font-sans selection:bg-brand-accent/30">
       {/* Navigation Header */}
               <header className="sticky top-0 z-50 border-b border-border-dim bg-bg-dark/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
@@ -293,7 +323,7 @@ export default function App() {
                     "px-5 py-2 rounded-xl text-[12px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap",
                     activeTab === tab.id 
                       ? "bg-brand-accent text-white shadow-lg shadow-brand-accent/30" 
-                      : "text-text-dim hover:text-white"
+                      : "text-text-dim hover:text-text-strong"
                   )}
                 >
                   <Icon className={cn("w-3.5 h-3.5", activeTab === tab.id ? "text-white" : "opacity-40")} />
@@ -304,6 +334,12 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-2.5 rounded-xl border border-border-dim bg-bg-dark/40 text-text-dim hover:text-text-strong transition-all"
+            >
+              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
             <div className="hidden sm:flex px-4 py-2.5 rounded-xl border border-brand-success/20 bg-brand-success/5 text-brand-success text-[10px] font-extrabold uppercase tracking-widest items-center gap-2 shadow-sm">
               <span className="w-1.5 h-1.5 bg-brand-success rounded-full animate-pulse shadow-[0_0_10px_rgba(48,164,108,0.8)]" />
               Secure Active
@@ -417,7 +453,7 @@ export default function App() {
                             </div>
                           </div>
                         </div>
-                        <div className="text-[15px] font-black flex items-center gap-3 text-white">
+                        <div className="text-[15px] font-black flex items-center gap-3 text-text-strong">
                           <Server className="w-4 h-4 text-brand-accent" />
                           {ipData?.dns_resolver || 'Buscando servidor...'}
                         </div>
@@ -434,34 +470,34 @@ export default function App() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     <div>
                       <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Hostname de Rede</div>
-                      <div className="text-[14px] font-black text-white truncate">{systemData?.hostname || 'ITM-NODE-PROD'}</div>
+                      <div className="text-[14px] font-black text-text-strong truncate">{systemData?.hostname || 'ITM-NODE-PROD'}</div>
                     </div>
                     <div>
                       <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Sistema Operacional</div>
-                      <div className="text-[14px] font-black text-white truncate">{systemData?.os}</div>
+                      <div className="text-[14px] font-black text-text-strong truncate">{systemData?.os}</div>
                     </div>
                     <div>
                       <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Engine Navegador</div>
-                      <div className="text-[14px] font-black text-white truncate">{systemData?.browser}</div>
+                      <div className="text-[14px] font-black text-text-strong truncate">{systemData?.browser}</div>
                     </div>
                     <div>
                       <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Recursos Físicos</div>
-                      <div className="text-[14px] font-black text-white flex gap-2">
-                         <span className="px-2 py-0.5 bg-white/5 rounded text-[10px]">{systemData?.ram} RAM</span>
-                         <span className="px-2 py-0.5 bg-white/5 rounded text-[10px]">{systemData?.cores} CORES</span>
+                      <div className="text-[14px] font-black text-text-strong flex gap-2">
+                         <span className="px-2 py-0.5 bg-text-strong/5 rounded text-[10px]">{systemData?.ram} RAM</span>
+                         <span className="px-2 py-0.5 bg-text-strong/5 rounded text-[10px]">{systemData?.cores} CORES</span>
                       </div>
                     </div>
                     <div>
                       <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Geometria de Tela</div>
-                      <div className="text-[14px] font-black text-white">{systemData?.resolution}</div>
+                      <div className="text-[14px] font-black text-text-strong">{systemData?.resolution}</div>
                     </div>
                     <div>
                       <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Localidade I18N</div>
-                      <div className="text-[14px] font-black text-white uppercase">{systemData?.language}</div>
+                      <div className="text-[14px] font-black text-text-strong uppercase">{ipData?.country_code || 'BR'}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Arquitetura Ark</div>
-                      <div className="text-[14px] font-black text-white">{systemData?.platform}</div>
+                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Fuso Horário</div>
+                      <div className="text-[14px] font-black text-text-strong uppercase truncate">{ipData?.timezone?.split('/').pop()?.replace('_', ' ') || 'São Paulo'}</div>
                     </div>
                     <div>
                       <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Status de Sessão</div>
@@ -489,7 +525,7 @@ export default function App() {
                       <div className="space-y-6">
                         <div>
                           <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-widest">Nome da Empresa</div>
-                          <div className="text-[16px] font-black text-white">{ipData?.org || 'Vivo S.A.'}</div>
+                          <div className="text-[16px] font-black text-text-strong">{ipData?.org || 'Vivo S.A.'}</div>
                         </div>
                         <div>
                           <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-widest">Número ASN</div>
@@ -500,7 +536,13 @@ export default function App() {
                         </div>
                         <div>
                           <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-widest">Região de Acesso</div>
-                          <div className="text-[15px] font-black text-white">{ipData?.city}, {ipData?.region} - Brasil</div>
+                          <div className="text-[15px] font-black text-text-strong flex flex-col gap-1">
+                             <span>{ipData?.city}, {ipData?.region} - {ipData?.country_name}</span>
+                             <div className="flex gap-2 items-center">
+                                <span className="px-1.5 py-0.5 bg-brand-accent/20 rounded text-[9px] border border-brand-accent/30">{ipData?.country_code || 'BR'}</span>
+                                <span className="text-[11px] text-text-dim/80 lowercase italic font-mono uppercase tracking-[0.1em]">GMT {ipData?.timezone || 'America/Sao_Paulo'}</span>
+                             </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -553,7 +595,7 @@ export default function App() {
                 transition={{ duration: 0.2 }}
                 className="w-full max-w-7xl mx-auto space-y-6"
               >
-                 <IPCalculator />
+                 <IPCalculator isDarkMode={isDarkMode} />
               </motion.div>
             )}
             
@@ -571,7 +613,7 @@ export default function App() {
                          <Shield className="w-8 h-8 text-brand-accent" />
                       </div>
                       <div className="flex-grow text-center md:text-left">
-                         <h2 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter">Validador de Rede Avançado</h2>
+                         <h2 className="text-xl md:text-2xl font-black text-text-strong uppercase italic tracking-tighter">Validador de Rede Avançado</h2>
                          <p className="text-text-dim text-xs md:text-sm">Audite qualquer endereço IP ou Domínio global com infraestrutura iTmanage.</p>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
@@ -607,11 +649,11 @@ export default function App() {
                          <div className="grid grid-cols-2 gap-4">
                             <div className="p-4 bg-bg-dark/40 rounded-xl border border-border-dim/30">
                                <div className="text-[10px] text-text-dim uppercase mb-1 font-black">Cidade / Região</div>
-                               <div className="text-sm font-black text-white truncate">{validatorData.city}, {validatorData.regionName}</div>
+                               <div className="text-sm font-black text-text-strong truncate">{validatorData.city}, {validatorData.regionName}</div>
                             </div>
                             <div className="p-4 bg-bg-dark/40 rounded-xl border border-border-dim/30">
                                <div className="text-[10px] text-text-dim uppercase mb-1 font-black">País</div>
-                               <div className="text-sm font-black text-white truncate">{validatorData.country}</div>
+                               <div className="text-sm font-black text-text-strong truncate">{validatorData.country}</div>
                             </div>
                          </div>
 
@@ -629,7 +671,7 @@ export default function App() {
                                   </div>
                                   <div className="space-y-1.5">
                                      {validatorData.dns_mx?.length > 0 ? validatorData.dns_mx.map((m: any, i: number) => (
-                                        <div key={i} className="text-[11px] font-mono text-white/80 flex justify-between">
+                                        <div key={i} className="text-[11px] font-mono text-text-strong/80 flex justify-between">
                                            <span className="truncate pr-2">{m.exchange}</span>
                                            <span className="text-brand-accent font-black">[{m.priority}]</span>
                                         </div>
@@ -642,7 +684,7 @@ export default function App() {
                                   </div>
                                   <div className="space-y-1.5">
                                      {validatorData.dns_ns?.length > 0 ? validatorData.dns_ns.map((n: string, i: number) => (
-                                        <div key={i} className="text-[11px] font-mono text-white/80 truncate">
+                                        <div key={i} className="text-[11px] font-mono text-text-strong/80 truncate">
                                            {n}
                                         </div>
                                      )) : <span className="text-[10px] text-text-dim italic">Nenhum registro encontrado</span>}
@@ -666,13 +708,13 @@ export default function App() {
                          <div className="flex flex-wrap gap-2 pt-4">
                             <button 
                                onClick={() => { setActiveTab('ping'); }}
-                               className="flex-grow py-3 bg-brand-success/10 text-brand-success border border-brand-success/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-success hover:text-white transition-all"
+                               className="flex-grow py-3 bg-brand-success/10 text-brand-success border border-brand-success/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-success hover:text-text-strong transition-all"
                             >
                                Diagnosticar Latência (Ping)
                             </button>
                             <button 
                                onClick={() => handleScanPorts()}
-                               className="flex-grow py-3 bg-brand-accent/10 text-brand-accent border border-brand-accent/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent hover:text-white transition-all"
+                               className="flex-grow py-3 bg-brand-accent/10 text-brand-accent border border-brand-accent/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent hover:text-text-strong transition-all"
                             >
                                Scan de Portas Ativo
                             </button>
@@ -717,7 +759,7 @@ export default function App() {
                                !r ? "bg-bg-dark/20 border-border-dim/40" :
                                r.status === 'open' ? "bg-brand-success/10 border-brand-success/30" : "bg-red-500/10 border-red-500/30"
                             )}>
-                               <div className="text-[9px] font-black text-text-dim uppercase tracking-widest group-hover:text-white">Porta {p}</div>
+                               <div className="text-[9px] font-black text-text-dim uppercase tracking-widest group-hover:text-text-strong">Porta {p}</div>
                                <div className="text-xl font-black font-mono">{p}</div>
                                {r && <div className={cn("text-[8px] font-black uppercase", r.status === 'open' ? "text-brand-success" : "text-red-500")}>{r.status}</div>}
                             </div>
@@ -730,7 +772,7 @@ export default function App() {
                               ? "bg-brand-success/10 border-brand-success/30" 
                               : "bg-red-500/10 border-red-500/30"
                          )}>
-                            <div className="text-[9px] font-black text-text-dim uppercase tracking-widest group-hover:text-white">Manual: {manualPort}</div>
+                            <div className="text-[9px] font-black text-text-dim uppercase tracking-widest group-hover:text-text-strong">Manual: {manualPort}</div>
                             <div className="text-xl font-black font-mono">{manualPort}</div>
                             <div className={cn(
                                "text-[8px] font-black uppercase",
@@ -764,7 +806,7 @@ export default function App() {
                          <div className="p-2 bg-brand-accent/10 rounded-xl">
                             <Server className="w-5 h-5 text-brand-accent" />
                          </div>
-                         <h3 className="text-sm font-black uppercase tracking-widest text-white italic">iTmanage LG Terminal</h3>
+                         <h3 className="text-sm font-black uppercase tracking-widest text-text-strong italic">iTmanage LG Terminal</h3>
                       </div>
 
                       <div className="space-y-4">
@@ -773,7 +815,7 @@ export default function App() {
                             <select 
                                value={lgRouter}
                                onChange={(e) => setLgRouter(e.target.value)}
-                               className="w-full bg-bg-dark border border-border-dim rounded-xl px-4 py-3 text-xs text-white font-bold outline-none focus:border-brand-accent"
+                               className="w-full bg-bg-dark border border-border-dim rounded-xl px-4 py-3 text-xs text-text-strong font-bold outline-none focus:border-brand-accent"
                             >
                                <option value="BR-SP-BIRD2">Brasil, São Paulo (BIRD2)</option>
                                <option value="US-ASH-BIRD2">EUA, Ashburn (GoBGP)</option>
@@ -806,7 +848,7 @@ export default function App() {
                                value={lgTarget}
                                onChange={(e) => setLgTarget(e.target.value)}
                                placeholder="Ex: 8.8.8.8"
-                               className="w-full bg-bg-dark border border-border-dim rounded-xl px-4 py-3 text-xs font-mono text-white outline-none focus:border-brand-accent"
+                               className="w-full bg-bg-dark border border-border-dim rounded-xl px-4 py-3 text-xs font-mono text-text-strong outline-none focus:border-brand-accent"
                             />
                          </div>
 
@@ -845,7 +887,7 @@ export default function App() {
 
                    <button 
                       onClick={() => setLgOutput('')}
-                      className="absolute bottom-6 right-6 p-2 bg-bg-dark/60 rounded-lg border border-border-dim text-[9px] font-bold text-text-dim uppercase hover:text-white transition-all"
+                      className="absolute bottom-6 right-6 p-2 bg-bg-dark/60 rounded-lg border border-border-dim text-[9px] font-bold text-text-dim uppercase hover:text-text-strong transition-all"
                    >
                       Limpar Console
                    </button>
@@ -867,7 +909,7 @@ export default function App() {
                          <Activity className="w-8 h-8 text-brand-success" />
                       </div>
                       <div className="flex-grow text-center md:text-left">
-                         <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Global Ping Monitoring</h2>
+                         <h2 className="text-2xl font-black text-text-strong uppercase italic tracking-tighter">Global Ping Monitoring</h2>
                          <p className="text-text-dim text-sm">Audite a latência e estabilidade do seu host a partir de múltiplos PoPs globais iTmanage.</p>
                       </div>
                       <div className="flex gap-2 w-full md:w-auto">
@@ -915,14 +957,14 @@ export default function App() {
                                      <td className="py-4 px-6">
                                         <div className="flex items-center gap-3">
                                            <div className="w-8 h-8 bg-bg-dark border border-border-dim rounded-lg flex items-center justify-center text-[10px] font-black text-brand-accent">{res.code}</div>
-                                           <div className="text-[12px] font-bold text-white">{res.name}</div>
+                                           <div className="text-[12px] font-bold text-text-strong">{res.name}</div>
                                         </div>
                                      </td>
                                      <td className={cn("py-4 text-[12px] font-mono font-bold", parseFloat(res.loss) > 0 ? "text-red-500" : "text-brand-success")}>{res.loss}%</td>
-                                     <td className="py-4 text-[12px] font-mono text-white/80">{res.last}ms</td>
-                                     <td className="py-4 text-[12px] font-mono text-white/80">{res.avg}ms</td>
-                                     <td className="py-4 text-[12px] font-mono text-white/50">{res.best}ms</td>
-                                     <td className="py-4 text-[12px] font-mono text-white/50">{res.worst}ms</td>
+                                     <td className="py-4 text-[12px] font-mono text-text-strong/80">{res.last}ms</td>
+                                     <td className="py-4 text-[12px] font-mono text-text-strong/80">{res.avg}ms</td>
+                                     <td className="py-4 text-[12px] font-mono text-text-strong/50">{res.best}ms</td>
+                                     <td className="py-4 text-[12px] font-mono text-text-strong/50">{res.worst}ms</td>
                                      <td className="py-4 px-6 text-right">
                                         <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-brand-success/10 text-brand-success text-[8px] font-black uppercase border border-brand-success/20">
                                            <div className="w-1 h-1 rounded-full bg-brand-success" /> Active
@@ -951,7 +993,7 @@ export default function App() {
                     <Shield className="w-5 h-5 text-brand-accent" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white mb-1 uppercase tracking-wider">Metodologia iTmanage Global</h4>
+                    <h4 className="text-xs font-bold text-text-strong mb-1 uppercase tracking-wider">Metodologia iTmanage Global</h4>
                     <p className="text-[10px] text-text-dim leading-relaxed">Os testes são disparados simultaneamente de nossos clusters de borda, utilizando ICMP e UDP para garantir a fidelidade dos dados de latência e perda de pacotes (Loss).</p>
                   </div>
                 </div>
@@ -964,89 +1006,132 @@ export default function App() {
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                className="bg-card-bg border border-border-dim rounded-xl p-8 max-w-4xl mx-auto flex flex-col min-h-[500px]"
+                className="grid grid-cols-1 lg:grid-cols-12 gap-6"
               >
-                <div className="flex items-center gap-4 mb-8 border-b border-border-dim pb-6">
-                  <div className="p-3 bg-brand-accent/10 rounded-2xl border border-brand-accent/20">
-                    <MapIcon className="w-6 h-6 text-brand-accent" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold tracking-tight text-white uppercase italic">Análise MTR iTmanage (Origem Navegador)</h2>
-                    <p className="text-xs text-text-dim">Mapeamento dinâmico de saltos utilizando o IP {ipData?.ip} como ponto de saída principal.</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 mb-8">
-                  <div className="relative flex-grow">
-                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-dim" />
-                    <input 
-                      id="trace-host-main"
-                      placeholder="Ex: google.com ou 1.1.1.1"
-                      className="w-full bg-bg-dark border border-border-dim rounded-xl pl-12 pr-4 py-4 sm:py-3 text-sm focus:outline-none focus:border-brand-accent transition-all shadow-inner font-mono text-white"
-                    />
-                  </div>
-                  <button 
-                    onClick={async () => {
-                      const input = document.getElementById('trace-host-main') as HTMLInputElement;
-                      const host = input.value || '8.8.8.8';
-                      const resultsDiv = document.getElementById('trace-main-results');
-                      if(!resultsDiv) return;
-                      resultsDiv.innerHTML = '<div class="py-20 flex flex-col items-center gap-4 text-text-dim"><Zap class="w-8 h-8 animate-pulse text-brand-accent" /><p>Mapeando rede iTmanage...</p></div>';
-                      try {
-                        const res = await axios.get(`/api/traceroute/${host}`);
-                        resultsDiv.innerHTML = `
-                          <div class="overflow-x-auto w-full">
-                            <table class="w-full text-left border-separate border-spacing-y-2 min-w-[600px]">
-                              <thead>
-                                <tr class="text-[10px] font-black uppercase text-text-dim/60 tracking-widest px-4">
-                                  <th class="pb-4 px-4 font-black">HO</th>
-                                  <th class="pb-4 font-black">HOST / IP</th>
-                                  <th class="pb-4 font-black">LOSS %</th>
-                                  <th class="pb-4 font-black text-center">LAST</th>
-                                  <th class="pb-4 font-black text-center">AVG</th>
-                                  <th class="pb-4 font-black text-center">BEST</th>
-                                  <th class="pb-4 font-black text-center">WRST</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                ${res.data.hops.map((h: any) => {
-                                  const baseLat = (Math.random() * 10 + (h.hop * 5));
-                                  const avg = baseLat.toFixed(1);
-                                  return `
-                                    <tr class="bg-bg-dark/30 border border-border-dim/30 rounded-xl group hover:bg-bg-dark/50 transition-all">
-                                      <td class="py-4 px-4">
-                                        <div class="w-7 h-7 rounded bg-brand-accent/10 text-brand-accent flex items-center justify-center text-[10px] font-black border border-brand-accent/10">${h.hop}</div>
-                                      </td>
-                                      <td class="py-4">
-                                        <div class="text-[11px] font-bold font-mono text-white tracking-tight">${h.ip}</div>
-                                        <div class="text-[9px] text-text-dim font-mono uppercase tracking-tighter">${h.city || 'Transito IP'}</div>
-                                      </td>
-                                      <td class="py-4 text-[11px] font-mono text-brand-success font-bold">0.0%</td>
-                                      <td class="py-4 text-[11px] font-mono text-white/90 text-center">${avg}ms</td>
-                                      <td class="py-4 text-[11px] font-mono text-white/90 text-center">${avg}ms</td>
-                                      <td class="py-4 text-[11px] font-mono text-white/50 text-center">${(parseFloat(avg) - 0.4).toFixed(1)}</td>
-                                      <td class="py-4 text-[11px] font-mono text-white/50 text-center">${(parseFloat(avg) + 1.2).toFixed(1)}</td>
-                                    </tr>
-                                  `
-                                }).join('')}
-                              </tbody>
-                            </table>
-                          </div>
-                        `;
-                      } catch(e) { resultsDiv.innerHTML = '<p class="text-red-500 p-10 text-center">Erro ao realizar o rastreio.</p>'; }
-                    }}
-                    className="px-8 py-4 sm:py-0 bg-brand-accent text-white font-bold rounded-xl text-xs uppercase tracking-widest hover:brightness-110 shadow-lg shadow-brand-accent/20 transition-all flex items-center justify-center gap-2 min-h-[52px]"
-                  >
-                    Iniciar Rastreio <Zap className="w-3 h-3" />
-                  </button>
-                </div>
-
-                <div id="trace-main-results" className="space-y-3 flex-grow overflow-y-auto pr-2 custom-scrollbar max-h-[400px]">
-                   <div className="h-full flex flex-col items-center justify-center text-text-dim italic text-sm py-20 border-2 border-dashed border-border-dim/30 rounded-2xl bg-bg-dark/10">
-                      <div className="p-4 bg-bg-dark rounded-full mb-4 group-hover:scale-110 transition-transform">
-                        <Monitor className="w-10 h-10 opacity-20" />
+                <div className="lg:col-span-8 bg-card-bg border border-border-dim rounded-2xl p-6 md:p-8 flex flex-col min-h-[600px] shadow-2xl">
+                  <div className="flex items-center justify-between mb-8 pb-6 border-b border-border-dim/50">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-brand-accent/10 rounded-2xl border border-brand-accent/20">
+                        <MapIcon className="w-6 h-6 text-brand-accent" />
                       </div>
-                      <p className="max-w-xs text-center leading-relaxed">Pronto para rastrear. Insira um destino para visualizar os saltos de rede entre você e o host.</p>
+                      <div>
+                        <h2 className="text-xl font-bold tracking-tight text-text-strong uppercase italic">Mapeamento Visual de Rede</h2>
+                        <p className="text-xs text-text-dim">Visualizando saltos geográficos para {traceTargetInput || 'Destino'}</p>
+                      </div>
+                    </div>
+                    {isTracing && (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-brand-accent/10 border border-brand-accent/20 rounded-full">
+                         <div className="w-2 h-2 bg-brand-accent rounded-full animate-ping" />
+                         <span className="text-[10px] font-black text-brand-accent uppercase tracking-widest">Analisando</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="h-[400px] bg-bg-dark rounded-xl relative overflow-hidden border border-border-dim/50 mb-8">
+                     <MapContainer 
+                       center={[0, 0]} 
+                       zoom={2} 
+                       style={{ height: '100%', width: '100%' }}
+                       zoomControl={true}
+                       className="z-0"
+                     >
+                       <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+                       {traceHops.filter(h => h.lat && h.lon).map((h, i) => (
+                         <Marker key={`hop-${i}`} position={[h.lat, h.lon]}>
+                           <Popup>
+                             <div className="p-2 min-w-[120px] bg-bg-dark border border-border-dim rounded-lg shadow-xl">
+                               <div className="text-[10px] uppercase font-black text-brand-accent mb-1 border-b border-border-dim pb-1">Salto #{h.hop}</div>
+                               <div className="text-[12px] font-mono text-text-strong mb-2 font-bold">{h.ip}</div>
+                               <div className="flex flex-col gap-1">
+                                 <div className="text-[9px] text-text-dim flex justify-between"><span>Local:</span> <span className="text-text-strong italic">{h.city}</span></div>
+                                 <div className="text-[9px] text-text-dim flex justify-between"><span>Delay:</span> <span className="text-brand-success font-bold">{h.ms}ms</span></div>
+                               </div>
+                             </div>
+                           </Popup>
+                         </Marker>
+                       ))}
+                       {traceHops.length > 1 && (
+                         <Polyline 
+                           positions={traceHops.filter(h => h.lat && h.lon).map(h => [h.lat, h.lon])} 
+                           color="rgb(48, 164, 108)" 
+                           weight={2}
+                           dashArray="10, 10"
+                           opacity={0.6}
+                         />
+                       )}
+                     </MapContainer>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 mb-8">
+                    <div className="relative flex-grow">
+                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-dim" />
+                      <input 
+                        value={traceTargetInput}
+                        onChange={(e) => setTraceTargetInput(e.target.value)}
+                        placeholder="Ex: google.com ou 1.1.1.1"
+                        className="w-full bg-bg-dark border border-border-dim rounded-xl pl-12 pr-4 py-4 sm:py-3 text-sm focus:outline-none focus:border-brand-accent transition-all shadow-inner font-mono text-text-strong"
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleTraceroute(); }}
+                      />
+                    </div>
+                    <button 
+                      onClick={() => handleTraceroute()}
+                      disabled={isTracing}
+                      className="px-8 py-4 sm:py-0 bg-brand-accent text-white font-bold rounded-xl text-xs uppercase tracking-widest hover:brightness-110 shadow-lg shadow-brand-accent/20 transition-all flex items-center justify-center gap-2 min-h-[52px] w-full sm:w-auto"
+                    >
+                      {isTracing ? <Activity className="w-4 h-4 animate-spin" /> : <Zap className="w-3 h-3" />}
+                      Efetuar Trace
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto w-full custom-scrollbar">
+                    <table className="w-full text-left border-separate border-spacing-y-2 min-w-[600px]">
+                      <thead>
+                        <tr className="text-[10px] font-black uppercase text-text-dim/60 tracking-widest px-4">
+                          <th className="pb-4 px-4 font-black">HO</th>
+                          <th className="pb-4 font-black">HOST / IP</th>
+                          <th className="pb-4 font-black">LATÊNCIA</th>
+                          <th className="pb-4 font-black text-right">LOCALIDADE</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {traceHops.map((h, i) => (
+                           <motion.tr 
+                             initial={{ opacity: 0, x: -10 }}
+                             animate={{ opacity: 1, x: 0 }}
+                             transition={{ delay: i * 0.1 }}
+                             key={i} 
+                             className="bg-bg-dark/30 border border-border-dim/30 rounded-xl group hover:bg-bg-dark/50 transition-all"
+                           >
+                            <td className="py-4 px-4">
+                              <div className="w-7 h-7 rounded bg-brand-accent/10 text-brand-accent flex items-center justify-center text-[10px] font-black border border-brand-accent/10">{h.hop}</div>
+                            </td>
+                            <td className="py-4">
+                              <div className="text-[11px] font-bold font-mono text-text-strong tracking-tight">{h.ip}</div>
+                            </td>
+                            <td className="py-4 text-[11px] font-mono text-brand-success font-bold">{h.ms} ms</td>
+                            <td className="py-4 text-[10px] font-mono text-text-dim uppercase tracking-tighter text-right px-4 italic">{h.city || 'Transito Nacional'}</td>
+                          </motion.tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-4 space-y-6">
+                   <div className="bg-card-bg border border-border-dim rounded-2xl p-6 shadow-xl">
+                      <h3 className="text-xs font-black text-text-strong uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                        <Info className="w-4 h-4 text-brand-accent" /> Log de Transmissão
+                      </h3>
+                      <div className="space-y-4">
+                         <div className="p-4 bg-bg-dark/60 rounded-xl border border-border-dim/50 font-mono text-[10px] leading-relaxed text-text-dim/80">
+                            Protocol: ICMP/UDP Path Discovery<br/>
+                            Nodes: iTmanage Global Net<br/>
+                            TTL Max: 30 hops
+                         </div>
+                         <p className="text-[11px] text-text-dim leading-relaxed">
+                            O mapeamento geográfico estima a rota baseada na geolocalização dos IPs de trânsito. Saltos sem geolocalização pública são omitidos do mapa mas listados na tabela.
+                         </p>
+                      </div>
                    </div>
                 </div>
               </motion.div>
@@ -1067,7 +1152,7 @@ export default function App() {
             href="https://www.itmanage.com.br" 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="px-4 py-2 border border-brand-accent/30 rounded-full text-brand-accent hover:bg-brand-accent hover:text-white transition-all scale-105"
+            className="px-4 py-2 border border-brand-accent/30 rounded-full text-brand-accent hover:bg-brand-accent hover:text-text-strong transition-all scale-105"
           >
             Visite iTmanage.com.br
           </a>

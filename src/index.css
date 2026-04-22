@@ -1,25 +1,50 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  
+:root {
   --color-brand-accent: #3E63DD;
   --color-brand-success: #30A46C;
   --color-bg-dark: #0A0B0E;
   --color-card-bg: #16191F;
   --color-border-dim: #2D3139;
   --color-text-dim: #889096;
+  --color-text-strong: #FFFFFF;
+  --logo-shadow: rgba(255, 255, 255, 0.4);
+}
+
+.light {
+  --color-bg-dark: #FFFFFF;
+  --color-card-bg: #F8FAFC;
+  --color-border-dim: #E2E8F0;
+  --color-text-dim: #64748B;
+  --color-text-strong: #0F172A;
+  --logo-shadow: rgba(0, 0, 0, 0.1);
+}
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand-accent: var(--color-brand-accent);
+  --color-brand-success: var(--color-brand-success);
+  --color-bg-dark: var(--color-bg-dark);
+  --color-card-bg: var(--color-card-bg);
+  --color-border-dim: var(--color-border-dim);
+  --color-text-dim: var(--color-text-dim);
+  --color-text-strong: var(--color-text-strong);
 }
 
 @layer base {
   body {
-    @apply bg-bg-dark text-white font-sans antialiased;
+    @apply bg-bg-dark text-slate-900 font-sans antialiased transition-colors duration-300;
     background-image: 
       radial-gradient(circle at 50% 10%, rgba(62, 99, 221, 0.08) 0%, transparent 60%);
     background-attachment: fixed;
   }
+}
+
+:not(.light) body {
+  @apply text-white;
 }
 
 .glow-text {
@@ -31,12 +56,13 @@
   border-left: 3px solid var(--color-brand-accent);
 }
 
-/* Leaflet dark theme customization */
+/* Leaflet theme customization */
 .leaflet-container {
-  background: #0A0B0E !important;
+  background: var(--color-bg-dark) !important;
   border-radius: 8px;
 }
-.leaflet-tile {
+
+:not(.light) .leaflet-tile {
   filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }
 

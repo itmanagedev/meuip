@@ -14,7 +14,7 @@ export function ITManageLogo({ className }: { className?: string }) {
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
         className="flex-shrink-0"
-        style={{ filter: "drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.4))" }}
+        style={{ filter: "drop-shadow(0px 0px 8px var(--logo-shadow, rgba(255, 255, 255, 0.4)))" }}
       >
         <g fill={brandBlue}>
           {/* Isolated dot on the left */}
@@ -41,7 +41,7 @@ export function ITManageLogo({ className }: { className?: string }) {
           fontFamily: "'Poppins', sans-serif", 
           fontSize: '32px', 
           color: brandBlue,
-          filter: "drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.2))"
+          filter: "drop-shadow(0px 0px 8px var(--logo-shadow, rgba(255, 255, 255, 0.2)))"
         }}
       >
         <span style={{ fontSize: '25px' }}>i</span>

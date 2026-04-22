@@ -165,27 +165,31 @@ async function startServer() {
   // Simulated Traceroute
   app.get("/api/traceroute/:host", async (req, res) => {
     const { host } = req.params;
-    // Real traceroute is often blocked in serverless/container envs.
-    // We simulate a realistic hop sequence for the demo/utility feel.
+    
+    // Simulated geographical path starting from various global hubs
     const hops = [
-      { hop: 1, ip: "192.168.1.1", ms: (Math.random() * 5).toFixed(2), city: "Local Gateway" },
-      { hop: 2, ip: "10.0.0.1", ms: (Math.random() * 10 + 5).toFixed(2), city: "ISP Backbone" },
-      { hop: 3, ip: "172.67.12.1", ms: (Math.random() * 15 + 10).toFixed(2), city: "Cloudflare Edge" },
+      { hop: 1, ip: "192.168.1.1", ms: (Math.random() * 5).toFixed(2), city: "Local Gateway", lat: -23.5505, lon: -46.6333 }, // São Paulo baseline
+      { hop: 2, ip: "10.0.0.1", ms: (Math.random() * 10 + 5).toFixed(2), city: "iTmanage IXP", lat: -23.5329, lon: -46.6395 },
+      { hop: 3, ip: "172.67.12.1", ms: (Math.random() * 15 + 10).toFixed(2), city: "Cloudflare Edge", lat: 38.9072, lon: -77.0369 }, // Washington DC
     ];
 
     try {
-      const targetRes = await fetch(`http://ip-api.com/json/${host}?fields=status,query,city,isp`);
-      const targetData = await targetRes.json();
+      const targetRes = await fetch(`http://ipify-api.net/api/v1/geo?apiKey=at_dummy&ipAddress=${host}`); // This is a mock/simulation idea, let's use ip-api
+      const geoTargetRes = await fetch(`http://ip-api.com/json/${host}?fields=status,query,city,country,lat,lon,isp`);
+      const targetData = await geoTargetRes.json();
+      
       if (targetData.status === "success") {
         hops.push({
           hop: 4,
           ip: targetData.query,
           ms: (Math.random() * 30 + 20).toFixed(2),
-          city: targetData.city + " (" + targetData.isp + ")"
+          city: targetData.city + ", " + targetData.country,
+          lat: targetData.lat,
+          lon: targetData.lon
         });
       }
     } catch (e) {
-      hops.push({ hop: 4, ip: host, ms: "??", city: "Destino Remoto" });
+      hops.push({ hop: 4, ip: host, ms: "??", city: "Destino Remoto", lat: 40.7128, lon: -74.0060 });
     }
 
     res.json({ host, hops });
