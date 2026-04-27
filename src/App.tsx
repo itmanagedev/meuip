@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Shield, 
@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { GoogleGenAI } from "@google/genai";
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useIPInspector } from './hooks/useIPInspector';
 import { cn } from './lib/utils';
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
@@ -50,9 +51,29 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 export default function App() {
   const { ipData, systemData, loading, error } = useIPInspector();
-  const [activeTab, setActiveTab] = useState('meu-ip');
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Hash routing logic: derive activeTab from hash
+  const activeTab = location.pathname.split('/')[1] || 'meu-ip';
+  const setActiveTab = (tab: string) => navigate(`/${tab}`);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
+
+  const [serverInfo, setServerInfo] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchServerInfo = async () => {
+      try {
+        const res = await axios.get('/api/connection-info');
+        setServerInfo(res.data);
+      } catch (e) {
+        console.error("Failed to fetch server info", e);
+      }
+    };
+    fetchServerInfo();
+  }, []);
 
   React.useEffect(() => {
     if (isDarkMode) {
@@ -99,11 +120,12 @@ export default function App() {
     // Set target IP if passed from outside
     if (ipToUse) setTargetIP(ipToUse);
 
-    // Simple validation for IP or domain
-    const ipPattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+    // Simple validation for IP (v4/v6) or domain
+    const ipv4Pattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+    const ipv6Pattern = /^(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}$|^((?:[a-fA-F0-9]{1,4}:){0,7})?::((?:[a-fA-F0-9]{1,4}:){0,7})?[a-fA-F0-9]{1,4}$/;
     const domainPattern = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/;
     
-    if (!ipPattern.test(ip) && !domainPattern.test(ip)) {
+    if (!ipv4Pattern.test(ip) && !ipv6Pattern.test(ip) && !domainPattern.test(ip)) {
       setValidatorData({ status: 'fail', message: 'Formato de IP ou Domínio inválido.' });
       return;
     }
@@ -469,22 +491,25 @@ export default function App() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     <div>
-                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Hostname de Rede</div>
-                      <div className="text-[14px] font-black text-text-strong truncate">{systemData?.hostname || 'ITM-NODE-PROD'}</div>
+                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Server Hostname</div>
+                      <div className="text-[14px] font-black text-text-strong truncate">{serverInfo?.hostname || systemData?.hostname || 'ITM-NODE-PROD'}</div>
                     </div>
                     <div>
                       <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Sistema Operacional</div>
-                      <div className="text-[14px] font-black text-text-strong truncate">{systemData?.os}</div>
+                      <div className="text-[14px] font-black text-text-strong truncate">{serverInfo?.platform || systemData?.os}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Engine Navegador</div>
-                      <div className="text-[14px] font-black text-text-strong truncate">{systemData?.browser}</div>
+                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">CPU Load / Cores</div>
+                      <div className="text-[14px] font-black text-text-strong truncate">
+                        {serverInfo ? `${serverInfo.cpu.load[0].toFixed(2)} / ${serverInfo.cpu.cores}` : systemData?.cores}
+                      </div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Recursos Físicos</div>
+                      <div className="text-[11px] text-text-dim mb-1.5 font-bold uppercase tracking-tighter">Memória RAM (Used/Total)</div>
                       <div className="text-[14px] font-black text-text-strong flex gap-2">
-                         <span className="px-2 py-0.5 bg-text-strong/5 rounded text-[10px]">{systemData?.ram} RAM</span>
-                         <span className="px-2 py-0.5 bg-text-strong/5 rounded text-[10px]">{systemData?.cores} CORES</span>
+                         <span className="px-2 py-0.5 bg-text-strong/5 rounded text-[10px]">
+                           {serverInfo ? `${serverInfo.memory.used}MB / ${serverInfo.memory.total}MB` : systemData?.ram}
+                         </span>
                       </div>
                     </div>
                     <div>
@@ -623,7 +648,7 @@ export default function App() {
                             onKeyDown={(e) => {
                                if (e.key === 'Enter') handleAnalyzeIP();
                             }}
-                            placeholder="8.8.8.8 ou google.com"
+                            placeholder="8.8.8.8, 2001:4860:4860::8888 ou google.com"
                             className="bg-bg-dark border border-border-dim rounded-xl px-6 py-4 text-sm font-mono flex-grow md:w-[300px] focus:border-brand-accent outline-none w-full sm:w-auto text-center sm:text-left"
                          />
                          <button 
@@ -1068,7 +1093,7 @@ export default function App() {
                       <input 
                         value={traceTargetInput}
                         onChange={(e) => setTraceTargetInput(e.target.value)}
-                        placeholder="Ex: google.com ou 1.1.1.1"
+                        placeholder="Ex: google.com, 1.1.1.1 ou 2606:4700:4700::1111"
                         className="w-full bg-bg-dark border border-border-dim rounded-xl pl-12 pr-4 py-4 sm:py-3 text-sm focus:outline-none focus:border-brand-accent transition-all shadow-inner font-mono text-text-strong"
                         onKeyDown={(e) => { if (e.key === 'Enter') handleTraceroute(); }}
                       />

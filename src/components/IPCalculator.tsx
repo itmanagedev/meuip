@@ -35,17 +35,46 @@ export function IPCalculator({ isDarkMode: globalIsDarkMode }: { isDarkMode?: bo
   const calculateSubnet = () => {
     try {
       if (type === 'v4') {
-        const parts = ipInput.split('/');
+        let parts = ipInput.trim().split(/[\/\s]+/);
         const ip = parts[0];
-        const cidr = parts[1] ? parseInt(parts[1], 10) : 24;
+        let cidr = 24;
+        let wildcardInput = '';
 
-        if (cidr < 0 || cidr > 32) throw new Error("CIDR inválido");
+        if (parts[1]) {
+          if (parts[1].includes('.')) {
+            // Check if it's a mask or a wildcard
+            const maskParts = parts[1].split('.');
+            if (maskParts.length === 4) {
+              if (maskParts[0] === '0') {
+                // Potential wildcard
+                wildcardInput = parts[1];
+                // Calculate CIDR from wildcard
+                const wildNum = maskParts.reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
+                const mask = (~wildNum) >>> 0;
+                cidr = 32 - Math.log2(wildNum + 1);
+                if (isNaN(cidr) || !Number.isInteger(cidr)) {
+                   // If not a perfect power of 2 - 1, we might just use the wildcard math directly
+                   // But for a calculator we usually expect standard subnets
+                }
+              } else {
+                // Subnet mask
+                const maskNum = maskParts.reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
+                cidr = 32 - Math.log2(~maskNum + 1);
+              }
+            }
+          } else {
+            cidr = parseInt(parts[1], 10);
+          }
+        }
+
+        if (isNaN(cidr) || cidr < 0 || cidr > 32) throw new Error("Parâmetros inválidos");
 
         const ipParts = ip.split('.');
         if (ipParts.length !== 4) throw new Error("IP inválido");
 
         const ipNum = ipParts.reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
         const mask = cidr === 0 ? 0 : (0xffffffff << (32 - cidr)) >>> 0;
+        const wildcard = (~mask) >>> 0;
         
         const network = (ipNum & mask) >>> 0;
         const broadcast = (network | (~mask)) >>> 0;
@@ -61,6 +90,7 @@ export function IPCalculator({ isDarkMode: globalIsDarkMode }: { isDarkMode?: bo
           lastHost: cidr >= 31 ? "N/A" : stringifyIPv4((broadcast - 1) >>> 0),
           broadcast: stringifyIPv4(broadcast),
           mask: stringifyIPv4(mask),
+          wildcard: stringifyIPv4(wildcard),
           totalHosts: totalHosts.toLocaleString('pt-BR'),
           usableHosts: usableHosts.toLocaleString('pt-BR'),
           type: 'v4',
@@ -80,6 +110,7 @@ export function IPCalculator({ isDarkMode: globalIsDarkMode }: { isDarkMode?: bo
         const MAX_V6 = BigInt("0xffffffffffffffffffffffffffffffff");
         const maskShift = BigInt(128 - cidr);
         const mask = cidr === 0 ? 0n : (MAX_V6 << maskShift) & MAX_V6;
+        const wildcard = MAX_V6 ^ mask;
 
         const network = ipBigInt & mask;
         const broadcast = network | (MAX_V6 ^ mask);
@@ -92,11 +123,12 @@ export function IPCalculator({ isDarkMode: globalIsDarkMode }: { isDarkMode?: bo
           firstHost: bigIntToIPv6(network + 1n),
           totalHosts: totalHosts.toString(),
           type: 'v6',
-          mask: cidr.toString()
+          mask: cidr.toString(),
+          wildcard: wildcard.toString(16).match(/.{1,4}/g)?.join(':') || 'N/A'
         });
       }
     } catch(e) {
-      alert("Por favor, digite um formato válido. Ex: 192.168.1.0/24");
+      alert("Por favor, digite um formato válido. Ex: 192.168.1.0/24 ou 192.168.1.0 0.0.0.255");
     }
   };
 
@@ -239,12 +271,14 @@ export function IPCalculator({ isDarkMode: globalIsDarkMode }: { isDarkMode?: bo
                         <ResultBox isDarkMode={isDarkMode} label="Último Host" value={results.lastHost} copyable />
                         <ResultBox isDarkMode={isDarkMode} label="Máscara Sub-rede" value={results.mask} copyable />
                         <ResultBox isDarkMode={isDarkMode} label="Máscara CIDR" value={`/${results.cidr}`} />
+                        <ResultBox isDarkMode={isDarkMode} label="Wildcard Mask" value={results.wildcard} copyable />
                       </>
                     ) : (
                       <>
                         <ResultBox isDarkMode={isDarkMode} label="Prefix Address" value={results.network} copyable />
                         <ResultBox isDarkMode={isDarkMode} label="Range Final" value={results.broadcast} copyable />
                         <ResultBox isDarkMode={isDarkMode} label="Prefixo IPv6" value={`/${results.mask}`} />
+                        <ResultBox isDarkMode={isDarkMode} label="IPv6 Wildcard" value={results.wildcard} copyable />
                       </>
                     )}
                   </div>

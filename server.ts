@@ -16,6 +16,29 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
+  app.get("/api/connection-info", (req, res) => {
+    const memoryUsage = {
+      total: Math.round(os.totalmem() / (1024 * 1024)),
+      free: Math.round(os.freemem() / (1024 * 1024)),
+      used: Math.round((os.totalmem() - os.freemem()) / (1024 * 1024))
+    };
+
+    const cpus = os.cpus();
+    const cpuInfo = {
+      model: cpus[0]?.model || "N/A",
+      cores: cpus.length,
+      load: os.loadavg()
+    };
+
+    res.json({
+      hostname: os.hostname(),
+      cpu: cpuInfo,
+      memory: memoryUsage,
+      uptime: os.uptime(),
+      platform: os.platform()
+    });
+  });
+
   app.get("/api/client-info", async (req, res) => {
     let ip = req.ip || req.socket.remoteAddress;
     
